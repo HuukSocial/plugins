@@ -97,6 +97,16 @@ public class Messages {
       this.httpHeaders = setterArg;
     }
 
+    private HashMap resolutionConfig;
+
+    public HashMap getResolutionConfig() {
+      return resolutionConfig;
+    }
+
+    public void setResolutionConfig(HashMap setterArg) {
+      this.resolutionConfig = setterArg;
+    }
+
     HashMap toMap() {
       HashMap<String, Object> toMapResult = new HashMap<>();
       toMapResult.put("asset", asset);
@@ -104,6 +114,7 @@ public class Messages {
       toMapResult.put("packageName", packageName);
       toMapResult.put("formatHint", formatHint);
       toMapResult.put("httpHeaders", httpHeaders);
+      toMapResult.put("resolutionConfig", resolutionConfig);
       return toMapResult;
     }
 
@@ -119,6 +130,8 @@ public class Messages {
       fromMapResult.formatHint = (String) formatHint;
       Object httpHeaders = map.get("httpHeaders");
       fromMapResult.httpHeaders = (HashMap) httpHeaders;
+      Object resolutionConfig = map.get("resolutionConfig");
+      fromMapResult.resolutionConfig = (HashMap) resolutionConfig;
       return fromMapResult;
     }
   }

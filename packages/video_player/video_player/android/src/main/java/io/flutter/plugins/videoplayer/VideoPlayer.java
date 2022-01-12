@@ -37,6 +37,8 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import com.google.android.exoplayer2.trackselection.AdaptiveTrackSelection;
+import com.google.android.exoplayer2.trackselection.DefaultTrackSelector;
 
 final class VideoPlayer {
   private static final String FORMAT_SS = "ss";
@@ -65,12 +67,18 @@ final class VideoPlayer {
       String dataSource,
       String formatHint,
       Map<String, String> httpHeaders,
+      HashMap resolution,
       VideoPlayerOptions options) {
     this.eventChannel = eventChannel;
     this.textureEntry = textureEntry;
     this.options = options;
 
-    exoPlayer = new SimpleExoPlayer.Builder(context).build();
+    AdaptiveTrackSelection.Factory trackSelection = new AdaptiveTrackSelection.Factory();
+    DefaultTrackSelector trackSelector = new DefaultTrackSelector(context, trackSelection);
+    DefaultTrackSelector.Parameters param = new DefaultTrackSelector.ParametersBuilder(context).setMaxVideoSize((int)Double.parseDouble(resolution.get("maxWidth").toString()), (int)Double.parseDouble(resolution.get("maxHeight").toString())).build();
+    trackSelector.setParameters(param);
+
+    exoPlayer = new SimpleExoPlayer.Builder(context).setTrackSelector(trackSelector).build();
 
     Uri uri = Uri.parse(dataSource);
 

@@ -94,18 +94,24 @@ static NSDictionary<NSString *, id> *wrapResult(NSDictionary *result, FlutterErr
   if ((NSNull *)result.httpHeaders == [NSNull null]) {
     result.httpHeaders = nil;
   }
+  result.resolutionConfig = dict[@"resolutionConfig"];
+  if ((NSNull *)result.resolutionConfig == [NSNull null]) {
+    result.resolutionConfig = nil;
+  }
   return result;
 }
 - (NSDictionary *)toMap {
-  return [NSDictionary
-      dictionaryWithObjectsAndKeys:(self.asset ? self.asset : [NSNull null]), @"asset",
-                                   (self.uri ? self.uri : [NSNull null]), @"uri",
-                                   (self.packageName ? self.packageName : [NSNull null]),
-                                   @"packageName",
-                                   (self.formatHint ? self.formatHint : [NSNull null]),
-                                   @"formatHint",
-                                   (self.httpHeaders ? self.httpHeaders : [NSNull null]),
-                                   @"httpHeaders", nil];
+    return [NSDictionary
+            dictionaryWithObjectsAndKeys:(self.asset ? self.asset : [NSNull null]), @"asset",
+            (self.uri ? self.uri : [NSNull null]), @"uri",
+            (self.packageName ? self.packageName : [NSNull null]),
+            @"packageName",
+            (self.formatHint ? self.formatHint : [NSNull null]),
+            @"formatHint",
+            (self.httpHeaders ? self.httpHeaders : [NSNull null]),
+            @"httpHeaders",
+            (self.resolutionConfig ? self.resolutionConfig : [NSNull null]),
+            @"resolutionConfig", nil];
 }
 @end
 

@@ -41,9 +41,11 @@
 @property(nonatomic, readonly) bool isPlaying;
 @property(nonatomic) bool isLooping;
 @property(nonatomic, readonly) bool isInitialized;
+
 - (instancetype)initWithURL:(NSURL*)url
                frameUpdater:(FLTFrameUpdater*)frameUpdater
-                httpHeaders:(NSDictionary<NSString*, NSString*>*)headers;
+                httpHeaders:(NSDictionary<NSString*, NSString*>*)headers
+           resolutionConfig:(NSDictionary<NSString*, NSDictionary*>*)resolutionConfig;
 - (void)play;
 - (void)pause;
 - (void)setIsLooping:(bool)isLooping;
@@ -61,7 +63,7 @@ static void* playbackBufferFullContext = &playbackBufferFullContext;
 @implementation FLTVideoPlayer
 - (instancetype)initWithAsset:(NSString*)asset frameUpdater:(FLTFrameUpdater*)frameUpdater {
   NSString* path = [[NSBundle mainBundle] pathForResource:asset ofType:nil];
-  return [self initWithURL:[NSURL fileURLWithPath:path] frameUpdater:frameUpdater httpHeaders:nil];
+  return [self initWithURL:[NSURL fileURLWithPath:path] frameUpdater:frameUpdater httpHeaders:nil resolutionConfig:nil];
 }
 
 - (void)addObservers:(AVPlayerItem*)item {
@@ -181,13 +183,26 @@ static inline CGFloat radiansToDegrees(CGFloat radians) {
 
 - (instancetype)initWithURL:(NSURL*)url
                frameUpdater:(FLTFrameUpdater*)frameUpdater
-                httpHeaders:(NSDictionary<NSString*, NSString*>*)headers {
+                httpHeaders:(NSDictionary<NSString*, NSString*>*)headers
+           resolutionConfig:(NSDictionary<NSString*, NSDictionary*>*)resolutionConfig {
   NSDictionary<NSString*, id>* options = nil;
   if (headers != nil && [headers count] != 0) {
     options = @{@"AVURLAssetHTTPHeaderFieldsKey" : headers};
   }
   AVURLAsset* urlAsset = [AVURLAsset URLAssetWithURL:url options:options];
   AVPlayerItem* item = [AVPlayerItem playerItemWithAsset:urlAsset];
+    
+  if (resolutionConfig) {
+    NSDictionary *maxResolution = resolutionConfig[@"maxResolution"];
+    NSNumber *maxWidth = maxResolution[@"maxWidth"];
+    NSNumber *maxHeight = maxResolution[@"maxHeight"];
+    NSLog(@"Set width is %f, height is: %f", [maxWidth doubleValue], [maxHeight doubleValue]);
+    if (@available(iOS 11.0, *)) {
+      item.preferredMaximumResolution = CGSizeMake([maxWidth floatValue], [maxHeight floatValue]);
+    } else {
+      // Fallback on earlier versions
+    };
+  }
   return [self initWithPlayerItem:item frameUpdater:frameUpdater];
 }
 
@@ -556,7 +571,7 @@ static inline CGFloat radiansToDegrees(CGFloat radians) {
   } else if (input.uri) {
     player = [[FLTVideoPlayer alloc] initWithURL:[NSURL URLWithString:input.uri]
                                     frameUpdater:frameUpdater
-                                     httpHeaders:input.httpHeaders];
+                                     httpHeaders:input.httpHeaders resolutionConfig:input.resolutionConfig];
     return [self onPlayerSetup:player frameUpdater:frameUpdater];
   } else {
     *error = [FlutterError errorWithCode:@"video_player" message:@"not implemented" details:nil];

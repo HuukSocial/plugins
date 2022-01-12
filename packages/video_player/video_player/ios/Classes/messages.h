@@ -29,6 +29,7 @@ NS_ASSUME_NONNULL_BEGIN
 @property(nonatomic, copy, nullable) NSString *packageName;
 @property(nonatomic, copy, nullable) NSString *formatHint;
 @property(nonatomic, strong, nullable) NSDictionary *httpHeaders;
+@property(nonatomic, copy, nullable) NSDictionary *resolutionConfig;
 @end
 
 @interface FLTLoopingMessage : NSObject

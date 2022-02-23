@@ -103,6 +103,11 @@ abstract class VideoPlayerPlatform extends PlatformInterface {
   Future<void> setMixWithOthers(bool mixWithOthers) {
     throw UnimplementedError('setMixWithOthers() has not been implemented.');
   }
+
+  /// preload
+  Future<void> preload(String url) {
+    throw UnimplementedError('preload() has not been implemented.');
+  }
 }
 
 /// Description of the data source used to create an instance of

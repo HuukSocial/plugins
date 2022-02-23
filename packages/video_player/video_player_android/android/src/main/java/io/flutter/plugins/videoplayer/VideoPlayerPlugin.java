@@ -212,9 +212,15 @@ public class VideoPlayerPlugin implements FlutterPlugin, VideoPlayerApi {
     options.mixWithOthers = arg.getMixWithOthers();
   }
 
-  private interface KeyForAssetFn {
-    String get(String asset);
-  }
+    @Override
+    public void preload(Messages.PreloadMessage msg) {
+        // TODO preload
+        Log.e(TAG, "call success! " + msg.getUrl());
+    }
+
+    private interface KeyForAssetFn {
+        String get(String asset);
+    }
 
   private interface KeyForAssetAndPackageName {
     String get(String asset, String packageName);

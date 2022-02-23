@@ -29,6 +29,11 @@ VideoPlayerPlatform get _videoPlayerPlatform {
   return currentInstance;
 }
 
+/// preload a network url
+void preload(String url) {
+  _videoPlayerPlatform.preload(url);
+}
+
 /// The duration, current position, buffering state, error state and settings
 /// of a [VideoPlayerController].
 class VideoPlayerValue {

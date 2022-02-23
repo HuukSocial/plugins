@@ -56,6 +56,11 @@ class MixWithOthersMessage {
   bool mixWithOthers;
 }
 
+class PreloadMessage {
+  PreloadMessage(this.url);
+  String url;
+}
+
 @HostApi(dartHostTestHandler: 'TestHostVideoPlayerApi')
 abstract class VideoPlayerApi {
   void initialize();
@@ -69,4 +74,5 @@ abstract class VideoPlayerApi {
   void seekTo(PositionMessage msg);
   void pause(TextureMessage msg);
   void setMixWithOthers(MixWithOthersMessage msg);
+  void preload(PreloadMessage msg);
 }

@@ -91,7 +91,7 @@ final class VideoPlayer {
     private static Cache cache;
     private static DatabaseProvider databaseProvider;
 
-    public static StreamKey hlsPreloadStreamKey = new StreamKey(HlsMasterPlaylist.GROUP_INDEX_VARIANT, 4);
+    public static StreamKey hlsPreloadStreamKey = new StreamKey(HlsMasterPlaylist.GROUP_INDEX_VARIANT, 0);
 
     VideoPlayer(
             Context context,

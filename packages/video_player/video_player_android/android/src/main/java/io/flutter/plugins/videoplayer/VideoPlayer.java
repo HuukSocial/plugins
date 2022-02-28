@@ -10,295 +10,380 @@ import static com.google.android.exoplayer2.Player.REPEAT_MODE_OFF;
 import android.content.Context;
 import android.net.Uri;
 import android.view.Surface;
+
 import androidx.annotation.NonNull;
+
 import com.google.android.exoplayer2.C;
-import com.google.android.exoplayer2.ExoPlaybackException;
+import com.google.android.exoplayer2.ExoPlayer;
 import com.google.android.exoplayer2.Format;
 import com.google.android.exoplayer2.MediaItem;
+import com.google.android.exoplayer2.PlaybackException;
 import com.google.android.exoplayer2.PlaybackParameters;
 import com.google.android.exoplayer2.Player;
 import com.google.android.exoplayer2.Player.Listener;
-import com.google.android.exoplayer2.SimpleExoPlayer;
 import com.google.android.exoplayer2.audio.AudioAttributes;
+import com.google.android.exoplayer2.database.DatabaseProvider;
+import com.google.android.exoplayer2.database.StandaloneDatabaseProvider;
+import com.google.android.exoplayer2.ext.cronet.CronetDataSource;
+import com.google.android.exoplayer2.ext.cronet.CronetUtil;
+import com.google.android.exoplayer2.offline.StreamKey;
 import com.google.android.exoplayer2.source.MediaSource;
+import com.google.android.exoplayer2.source.MediaSourceFactory;
 import com.google.android.exoplayer2.source.ProgressiveMediaSource;
 import com.google.android.exoplayer2.source.dash.DashMediaSource;
 import com.google.android.exoplayer2.source.dash.DefaultDashChunkSource;
 import com.google.android.exoplayer2.source.hls.HlsMediaSource;
+import com.google.android.exoplayer2.source.hls.playlist.HlsMasterPlaylist;
 import com.google.android.exoplayer2.source.smoothstreaming.DefaultSsChunkSource;
 import com.google.android.exoplayer2.source.smoothstreaming.SsMediaSource;
+import com.google.android.exoplayer2.trackselection.DefaultTrackSelector;
 import com.google.android.exoplayer2.upstream.DataSource;
-import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory;
+import com.google.android.exoplayer2.upstream.DefaultDataSource;
 import com.google.android.exoplayer2.upstream.DefaultHttpDataSource;
+import com.google.android.exoplayer2.upstream.HttpDataSource;
+import com.google.android.exoplayer2.upstream.cache.Cache;
+import com.google.android.exoplayer2.upstream.cache.CacheDataSource;
+import com.google.android.exoplayer2.upstream.cache.NoOpCacheEvictor;
+import com.google.android.exoplayer2.upstream.cache.SimpleCache;
 import com.google.android.exoplayer2.util.Util;
-import io.flutter.plugin.common.EventChannel;
-import io.flutter.view.TextureRegistry;
+
+import org.chromium.net.CronetEngine;
+
+import java.io.File;
+import java.net.CookieHandler;
+import java.net.CookieManager;
+import java.net.CookiePolicy;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Executors;
+
+import io.flutter.plugin.common.EventChannel;
+import io.flutter.view.TextureRegistry;
 
 final class VideoPlayer {
-  private static final String FORMAT_SS = "ss";
-  private static final String FORMAT_DASH = "dash";
-  private static final String FORMAT_HLS = "hls";
-  private static final String FORMAT_OTHER = "other";
+    private static final String FORMAT_SS = "ss";
+    private static final String FORMAT_DASH = "dash";
+    private static final String FORMAT_HLS = "hls";
+    private static final String FORMAT_OTHER = "other";
 
-  private SimpleExoPlayer exoPlayer;
+    private static final boolean USE_CRONET_FOR_NETWORKING = true;
+    private static final String DOWNLOAD_CONTENT_DIRECTORY = "exoCaches";
 
-  private Surface surface;
+    private ExoPlayer exoPlayer;
 
-  private final TextureRegistry.SurfaceTextureEntry textureEntry;
+    private Surface surface;
 
-  private QueuingEventSink eventSink = new QueuingEventSink();
+    private final TextureRegistry.SurfaceTextureEntry textureEntry;
 
-  private final EventChannel eventChannel;
+    private QueuingEventSink eventSink = new QueuingEventSink();
 
-  private boolean isInitialized = false;
+    private final EventChannel eventChannel;
 
-  private final VideoPlayerOptions options;
+    private boolean isInitialized = false;
 
-  VideoPlayer(
-      Context context,
-      EventChannel eventChannel,
-      TextureRegistry.SurfaceTextureEntry textureEntry,
-      String dataSource,
-      String formatHint,
-      @NonNull Map<String, String> httpHeaders,
-      VideoPlayerOptions options) {
-    this.eventChannel = eventChannel;
-    this.textureEntry = textureEntry;
-    this.options = options;
+    private final VideoPlayerOptions options;
 
-    exoPlayer = new SimpleExoPlayer.Builder(context).build();
+    private static CacheDataSource.Factory cacheDataSourceFactory;
+    private static HttpDataSource.Factory httpDataSourceFactory;
+    private static Cache cache;
+    private static DatabaseProvider databaseProvider;
 
-    Uri uri = Uri.parse(dataSource);
+    public static StreamKey hlsPreloadStreamKey = new StreamKey(HlsMasterPlaylist.GROUP_INDEX_VARIANT, 4);
 
-    DataSource.Factory dataSourceFactory;
-    if (isHTTP(uri)) {
-      DefaultHttpDataSource.Factory httpDataSourceFactory =
-          new DefaultHttpDataSource.Factory()
-              .setUserAgent("ExoPlayer")
-              .setAllowCrossProtocolRedirects(true);
+    VideoPlayer(
+            Context context,
+            EventChannel eventChannel,
+            TextureRegistry.SurfaceTextureEntry textureEntry,
+            String dataSource,
+            String formatHint,
+            @NonNull Map<String, String> httpHeaders,
+            VideoPlayerOptions options) {
+        this.eventChannel = eventChannel;
+        this.textureEntry = textureEntry;
+        this.options = options;
 
-      if (httpHeaders != null && !httpHeaders.isEmpty()) {
-        httpDataSourceFactory.setDefaultRequestProperties(httpHeaders);
-      }
-      dataSourceFactory = httpDataSourceFactory;
-    } else {
-      dataSourceFactory = new DefaultDataSourceFactory(context, "ExoPlayer");
+        DefaultTrackSelector trackSelector = new DefaultTrackSelector(context);
+        DataSource.Factory dataSourceFactory = getDataSourceFactory(context);
+        MediaSourceFactory mediaSourceFactory = new HlsMediaSource
+                .Factory(dataSourceFactory)
+                .setAllowChunklessPreparation(true);
+
+        MediaItem mediaItem = new MediaItem.Builder()
+                .setUri(dataSource)
+                .setMediaId(dataSource)
+                .setCustomCacheKey(dataSource)
+                .setStreamKeys(Collections.singletonList(hlsPreloadStreamKey))
+                .build();
+
+        exoPlayer = new ExoPlayer.Builder(context)
+                .setMediaSourceFactory(mediaSourceFactory)
+                .setTrackSelector(trackSelector)
+                .build();
+        exoPlayer.setMediaItem(mediaItem);
+        exoPlayer.prepare();
+
+        setupVideoPlayer(eventChannel, textureEntry);
     }
 
-    MediaSource mediaSource = buildMediaSource(uri, dataSourceFactory, formatHint, context);
-    exoPlayer.setMediaSource(mediaSource);
-    exoPlayer.prepare();
-
-    setupVideoPlayer(eventChannel, textureEntry);
-  }
-
-  private static boolean isHTTP(Uri uri) {
-    if (uri == null || uri.getScheme() == null) {
-      return false;
+    private static boolean isHTTP(Uri uri) {
+        if (uri == null || uri.getScheme() == null) {
+            return false;
+        }
+        String scheme = uri.getScheme();
+        return scheme.equals("http") || scheme.equals("https");
     }
-    String scheme = uri.getScheme();
-    return scheme.equals("http") || scheme.equals("https");
-  }
 
-  private MediaSource buildMediaSource(
-      Uri uri, DataSource.Factory mediaDataSourceFactory, String formatHint, Context context) {
-    int type;
-    if (formatHint == null) {
-      type = Util.inferContentType(uri.getLastPathSegment());
-    } else {
-      switch (formatHint) {
-        case FORMAT_SS:
-          type = C.TYPE_SS;
-          break;
-        case FORMAT_DASH:
-          type = C.TYPE_DASH;
-          break;
-        case FORMAT_HLS:
-          type = C.TYPE_HLS;
-          break;
-        case FORMAT_OTHER:
-          type = C.TYPE_OTHER;
-          break;
-        default:
-          type = -1;
-          break;
-      }
-    }
-    switch (type) {
-      case C.TYPE_SS:
-        return new SsMediaSource.Factory(
-                new DefaultSsChunkSource.Factory(mediaDataSourceFactory),
-                new DefaultDataSourceFactory(context, null, mediaDataSourceFactory))
-            .createMediaSource(MediaItem.fromUri(uri));
-      case C.TYPE_DASH:
-        return new DashMediaSource.Factory(
-                new DefaultDashChunkSource.Factory(mediaDataSourceFactory),
-                new DefaultDataSourceFactory(context, null, mediaDataSourceFactory))
-            .createMediaSource(MediaItem.fromUri(uri));
-      case C.TYPE_HLS:
-        return new HlsMediaSource.Factory(mediaDataSourceFactory)
-            .createMediaSource(MediaItem.fromUri(uri));
-      case C.TYPE_OTHER:
-        return new ProgressiveMediaSource.Factory(mediaDataSourceFactory)
-            .createMediaSource(MediaItem.fromUri(uri));
-      default:
-        {
-          throw new IllegalStateException("Unsupported type: " + type);
+    private MediaSource buildMediaSource(
+            Uri uri, DataSource.Factory mediaDataSourceFactory, String formatHint, Context context) {
+        int type;
+        if (formatHint == null) {
+            type = Util.inferContentType(uri.getLastPathSegment());
+        } else {
+            switch (formatHint) {
+                case FORMAT_SS:
+                    type = C.TYPE_SS;
+                    break;
+                case FORMAT_DASH:
+                    type = C.TYPE_DASH;
+                    break;
+                case FORMAT_HLS:
+                    type = C.TYPE_HLS;
+                    break;
+                case FORMAT_OTHER:
+                    type = C.TYPE_OTHER;
+                    break;
+                default:
+                    type = -1;
+                    break;
+            }
+        }
+        switch (type) {
+            case C.TYPE_SS:
+                return new SsMediaSource.Factory(
+                        new DefaultSsChunkSource.Factory(mediaDataSourceFactory),
+                        new DefaultDataSource.Factory(context, mediaDataSourceFactory))
+                        .createMediaSource(MediaItem.fromUri(uri));
+            case C.TYPE_DASH:
+                return new DashMediaSource.Factory(
+                        new DefaultDashChunkSource.Factory(mediaDataSourceFactory),
+                        new DefaultDataSource.Factory(context, mediaDataSourceFactory))
+                        .createMediaSource(MediaItem.fromUri(uri));
+            case C.TYPE_HLS:
+                return new HlsMediaSource.Factory(mediaDataSourceFactory)
+                        .createMediaSource(MediaItem.fromUri(uri));
+            case C.TYPE_OTHER:
+                return new ProgressiveMediaSource.Factory(mediaDataSourceFactory)
+                        .createMediaSource(MediaItem.fromUri(uri));
+            default: {
+                throw new IllegalStateException("Unsupported type: " + type);
+            }
         }
     }
-  }
 
-  private void setupVideoPlayer(
-      EventChannel eventChannel, TextureRegistry.SurfaceTextureEntry textureEntry) {
-    eventChannel.setStreamHandler(
-        new EventChannel.StreamHandler() {
-          @Override
-          public void onListen(Object o, EventChannel.EventSink sink) {
-            eventSink.setDelegate(sink);
-          }
+    private void setupVideoPlayer(
+            EventChannel eventChannel, TextureRegistry.SurfaceTextureEntry textureEntry) {
+        eventChannel.setStreamHandler(
+                new EventChannel.StreamHandler() {
+                    @Override
+                    public void onListen(Object o, EventChannel.EventSink sink) {
+                        eventSink.setDelegate(sink);
+                    }
 
-          @Override
-          public void onCancel(Object o) {
-            eventSink.setDelegate(null);
-          }
-        });
+                    @Override
+                    public void onCancel(Object o) {
+                        eventSink.setDelegate(null);
+                    }
+                });
 
-    surface = new Surface(textureEntry.surfaceTexture());
-    exoPlayer.setVideoSurface(surface);
-    setAudioAttributes(exoPlayer, options.mixWithOthers);
+        surface = new Surface(textureEntry.surfaceTexture());
+        exoPlayer.setVideoSurface(surface);
+        setAudioAttributes(exoPlayer, options.mixWithOthers);
 
-    exoPlayer.addListener(
-        new Listener() {
-          private boolean isBuffering = false;
+        exoPlayer.addListener(
+                new Listener() {
+                    private boolean isBuffering = false;
 
-          public void setBuffering(boolean buffering) {
-            if (isBuffering != buffering) {
-              isBuffering = buffering;
-              Map<String, Object> event = new HashMap<>();
-              event.put("event", isBuffering ? "bufferingStart" : "bufferingEnd");
-              eventSink.success(event);
+                    public void setBuffering(boolean buffering) {
+                        if (isBuffering != buffering) {
+                            isBuffering = buffering;
+                            Map<String, Object> event = new HashMap<>();
+                            event.put("event", isBuffering ? "bufferingStart" : "bufferingEnd");
+                            eventSink.success(event);
+                        }
+                    }
+
+                    @Override
+                    public void onPlaybackStateChanged(final int playbackState) {
+                        if (playbackState == Player.STATE_BUFFERING) {
+                            setBuffering(true);
+                            sendBufferingUpdate();
+                        } else if (playbackState == Player.STATE_READY) {
+                            if (!isInitialized) {
+                                isInitialized = true;
+                                sendInitialized();
+                            }
+                        } else if (playbackState == Player.STATE_ENDED) {
+                            Map<String, Object> event = new HashMap<>();
+                            event.put("event", "completed");
+                            eventSink.success(event);
+                        }
+
+                        if (playbackState != Player.STATE_BUFFERING) {
+                            setBuffering(false);
+                        }
+                    }
+
+                    @Override
+                    public void onPlayerError(PlaybackException error) {
+                        setBuffering(false);
+                        if (eventSink != null) {
+                            eventSink.error("VideoError", "Video player had error " + error, null);
+                        }
+                    }
+                });
+    }
+
+    void sendBufferingUpdate() {
+        Map<String, Object> event = new HashMap<>();
+        event.put("event", "bufferingUpdate");
+        List<? extends Number> range = Arrays.asList(0, exoPlayer.getBufferedPosition());
+        // iOS supports a list of buffered ranges, so here is a list with a single range.
+        event.put("values", Collections.singletonList(range));
+        eventSink.success(event);
+    }
+
+    @SuppressWarnings("deprecation")
+    private static void setAudioAttributes(ExoPlayer exoPlayer, boolean isMixMode) {
+        exoPlayer.setAudioAttributes(
+                new AudioAttributes.Builder().setContentType(C.CONTENT_TYPE_MOVIE).build(), !isMixMode);
+    }
+
+    void play() {
+        exoPlayer.setPlayWhenReady(true);
+    }
+
+    void pause() {
+        exoPlayer.setPlayWhenReady(false);
+    }
+
+    void setLooping(boolean value) {
+        exoPlayer.setRepeatMode(value ? REPEAT_MODE_ALL : REPEAT_MODE_OFF);
+    }
+
+    void setVolume(double value) {
+        float bracketedValue = (float) Math.max(0.0, Math.min(1.0, value));
+        exoPlayer.setVolume(bracketedValue);
+    }
+
+    void setPlaybackSpeed(double value) {
+        // We do not need to consider pitch and skipSilence for now as we do not handle them and
+        // therefore never diverge from the default values.
+        final PlaybackParameters playbackParameters = new PlaybackParameters(((float) value));
+
+        exoPlayer.setPlaybackParameters(playbackParameters);
+    }
+
+    void seekTo(int location) {
+        exoPlayer.seekTo(location);
+    }
+
+    long getPosition() {
+        return exoPlayer.getCurrentPosition();
+    }
+
+    @SuppressWarnings("SuspiciousNameCombination")
+    private void sendInitialized() {
+        if (isInitialized) {
+            Map<String, Object> event = new HashMap<>();
+            event.put("event", "initialized");
+            event.put("duration", exoPlayer.getDuration());
+
+            if (exoPlayer.getVideoFormat() != null) {
+                Format videoFormat = exoPlayer.getVideoFormat();
+                int width = videoFormat.width;
+                int height = videoFormat.height;
+                int rotationDegrees = videoFormat.rotationDegrees;
+                // Switch the width/height if video was taken in portrait mode
+                if (rotationDegrees == 90 || rotationDegrees == 270) {
+                    width = exoPlayer.getVideoFormat().height;
+                    height = exoPlayer.getVideoFormat().width;
+                }
+                event.put("width", width);
+                event.put("height", height);
             }
-          }
-
-          @Override
-          public void onPlaybackStateChanged(final int playbackState) {
-            if (playbackState == Player.STATE_BUFFERING) {
-              setBuffering(true);
-              sendBufferingUpdate();
-            } else if (playbackState == Player.STATE_READY) {
-              if (!isInitialized) {
-                isInitialized = true;
-                sendInitialized();
-              }
-            } else if (playbackState == Player.STATE_ENDED) {
-              Map<String, Object> event = new HashMap<>();
-              event.put("event", "completed");
-              eventSink.success(event);
-            }
-
-            if (playbackState != Player.STATE_BUFFERING) {
-              setBuffering(false);
-            }
-          }
-
-          @Override
-          public void onPlayerError(final ExoPlaybackException error) {
-            setBuffering(false);
-            if (eventSink != null) {
-              eventSink.error("VideoError", "Video player had error " + error, null);
-            }
-          }
-        });
-  }
-
-  void sendBufferingUpdate() {
-    Map<String, Object> event = new HashMap<>();
-    event.put("event", "bufferingUpdate");
-    List<? extends Number> range = Arrays.asList(0, exoPlayer.getBufferedPosition());
-    // iOS supports a list of buffered ranges, so here is a list with a single range.
-    event.put("values", Collections.singletonList(range));
-    eventSink.success(event);
-  }
-
-  @SuppressWarnings("deprecation")
-  private static void setAudioAttributes(SimpleExoPlayer exoPlayer, boolean isMixMode) {
-    exoPlayer.setAudioAttributes(
-        new AudioAttributes.Builder().setContentType(C.CONTENT_TYPE_MOVIE).build(), !isMixMode);
-  }
-
-  void play() {
-    exoPlayer.setPlayWhenReady(true);
-  }
-
-  void pause() {
-    exoPlayer.setPlayWhenReady(false);
-  }
-
-  void setLooping(boolean value) {
-    exoPlayer.setRepeatMode(value ? REPEAT_MODE_ALL : REPEAT_MODE_OFF);
-  }
-
-  void setVolume(double value) {
-    float bracketedValue = (float) Math.max(0.0, Math.min(1.0, value));
-    exoPlayer.setVolume(bracketedValue);
-  }
-
-  void setPlaybackSpeed(double value) {
-    // We do not need to consider pitch and skipSilence for now as we do not handle them and
-    // therefore never diverge from the default values.
-    final PlaybackParameters playbackParameters = new PlaybackParameters(((float) value));
-
-    exoPlayer.setPlaybackParameters(playbackParameters);
-  }
-
-  void seekTo(int location) {
-    exoPlayer.seekTo(location);
-  }
-
-  long getPosition() {
-    return exoPlayer.getCurrentPosition();
-  }
-
-  @SuppressWarnings("SuspiciousNameCombination")
-  private void sendInitialized() {
-    if (isInitialized) {
-      Map<String, Object> event = new HashMap<>();
-      event.put("event", "initialized");
-      event.put("duration", exoPlayer.getDuration());
-
-      if (exoPlayer.getVideoFormat() != null) {
-        Format videoFormat = exoPlayer.getVideoFormat();
-        int width = videoFormat.width;
-        int height = videoFormat.height;
-        int rotationDegrees = videoFormat.rotationDegrees;
-        // Switch the width/height if video was taken in portrait mode
-        if (rotationDegrees == 90 || rotationDegrees == 270) {
-          width = exoPlayer.getVideoFormat().height;
-          height = exoPlayer.getVideoFormat().width;
+            eventSink.success(event);
         }
-        event.put("width", width);
-        event.put("height", height);
-      }
-      eventSink.success(event);
     }
-  }
 
-  void dispose() {
-    if (isInitialized) {
-      exoPlayer.stop();
+    void dispose() {
+        if (isInitialized) {
+            exoPlayer.stop();
+        }
+        textureEntry.release();
+        eventChannel.setStreamHandler(null);
+        if (surface != null) {
+            surface.release();
+        }
+        if (exoPlayer != null) {
+            exoPlayer.release();
+        }
     }
-    textureEntry.release();
-    eventChannel.setStreamHandler(null);
-    if (surface != null) {
-      surface.release();
+
+    public static synchronized CacheDataSource.Factory getDataSourceFactory(Context context) {
+        if (cacheDataSourceFactory == null) {
+            context = context.getApplicationContext();
+            DefaultDataSource.Factory upstreamFactory =
+                    new DefaultDataSource.Factory(context, getHttpDataSourceFactory(context));
+            cacheDataSourceFactory = buildCacheDataSource(upstreamFactory, getDownloadCache(context));
+        }
+        return cacheDataSourceFactory;
     }
-    if (exoPlayer != null) {
-      exoPlayer.release();
+
+    private static synchronized HttpDataSource.Factory getHttpDataSourceFactory(Context context) {
+        if (httpDataSourceFactory == null) {
+            if (USE_CRONET_FOR_NETWORKING) {
+                context = context.getApplicationContext();
+                CronetEngine cronetEngine = CronetUtil.buildCronetEngine(context);
+                if (cronetEngine != null) {
+                    httpDataSourceFactory =
+                            new CronetDataSource.Factory(cronetEngine, Executors.newSingleThreadExecutor());
+                }
+            }
+            if (httpDataSourceFactory == null) {
+                // We don't want to use Cronet, or we failed to instantiate a CronetEngine.
+                CookieManager cookieManager = new CookieManager();
+                cookieManager.setCookiePolicy(CookiePolicy.ACCEPT_ORIGINAL_SERVER);
+                CookieHandler.setDefault(cookieManager);
+                httpDataSourceFactory = new DefaultHttpDataSource.Factory();
+            }
+        }
+        return httpDataSourceFactory;
     }
-  }
+
+    private static synchronized Cache getDownloadCache(Context context) {
+        if (cache == null) {
+            File downloadContentDirectory = new File(context.getCacheDir(), DOWNLOAD_CONTENT_DIRECTORY);
+            cache =
+                    new SimpleCache(
+                            downloadContentDirectory, new NoOpCacheEvictor(), getDatabaseProvider(context));
+        }
+        return cache;
+    }
+
+    private static synchronized DatabaseProvider getDatabaseProvider(Context context) {
+        if (databaseProvider == null) {
+            databaseProvider = new StandaloneDatabaseProvider(context);
+        }
+        return databaseProvider;
+    }
+
+    private static CacheDataSource.Factory buildCacheDataSource(
+            DataSource.Factory upstreamFactory, Cache cache) {
+        return new CacheDataSource.Factory()
+                .setCache(cache)
+                .setUpstreamDataSourceFactory(upstreamFactory);
+    }
 }

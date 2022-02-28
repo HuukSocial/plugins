@@ -17,6 +17,7 @@ import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Map;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -51,7 +52,7 @@ public class VideoPlayerPlugin implements FlutterPlugin, VideoPlayerApi {
     // This list will be a flag to prevent duplicate preload call for one url
     private final ArrayList<String> preloadMediaUrls = new ArrayList<>();
     // Limit of precache for each video
-    private final int limitPrecacheBytes = 1024 * 512;
+    private final int limitPrecacheBytes = 2 * 1024 * 1024;
 
     /**
      * Register this with the v2 embedding for the plugin to respond to lifecycle callbacks.
@@ -263,6 +264,7 @@ public class VideoPlayerPlugin implements FlutterPlugin, VideoPlayerApi {
                         hlsDownloader.cancel();
                     }
                 });
+            } catch (CancellationException ignored) {
             } catch (Exception e) {
                 Log.e(TAG, e.toString());
                 preloadMediaUrls.remove(msg.getUrl());

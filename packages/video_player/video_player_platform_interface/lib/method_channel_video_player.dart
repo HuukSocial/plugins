@@ -150,10 +150,13 @@ class MethodChannelVideoPlayer extends VideoPlayerPlatform {
   }
 
   @override
-  Future<void> preload(String url, bool shouldPreloadFirstSegment) async {
+  Future<void> preload(
+    List<String> urls,
+    bool shouldPreloadFirstSegment,
+  ) async {
     return _api.preload(
       PreloadMessage()
-        ..url = url
+        ..urls = urls
         ..shouldPreloadFirstSegment = shouldPreloadFirstSegment,
     );
   }

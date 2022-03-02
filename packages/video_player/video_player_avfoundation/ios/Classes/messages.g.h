@@ -18,6 +18,7 @@ NS_ASSUME_NONNULL_BEGIN
 @class FLTPositionMessage;
 @class FLTCreateMessage;
 @class FLTMixWithOthersMessage;
+@class FLTPreloadMessage;
 
 @interface FLTTextureMessage : NSObject
 /// `init` unavailable to enforce nonnull fields, see the `make` class method.
@@ -86,6 +87,15 @@ NS_ASSUME_NONNULL_BEGIN
 @property(nonatomic, strong) NSNumber * mixWithOthers;
 @end
 
+@interface FLTPreloadMessage : NSObject
+/// `init` unavailable to enforce nonnull fields, see the `make` class method.
+- (instancetype)init NS_UNAVAILABLE;
++ (instancetype)makeWithUrls:(NSArray<NSString *> *)urls
+    shouldPreloadFirstSegment:(NSNumber *)shouldPreloadFirstSegment;
+@property(nonatomic, strong) NSArray<NSString *> * urls;
+@property(nonatomic, strong) NSNumber * shouldPreloadFirstSegment;
+@end
+
 /// The codec used by FLTVideoPlayerApi.
 NSObject<FlutterMessageCodec> *FLTVideoPlayerApiGetCodec(void);
 
@@ -112,6 +122,8 @@ NSObject<FlutterMessageCodec> *FLTVideoPlayerApiGetCodec(void);
 - (void)pause:(FLTTextureMessage *)msg error:(FlutterError *_Nullable *_Nonnull)error;
 /// @return `nil` only when `error != nil`.
 - (void)setMixWithOthers:(FLTMixWithOthersMessage *)msg error:(FlutterError *_Nullable *_Nonnull)error;
+/// @return `nil` only when `error != nil`.
+- (void)preload:(FLTPreloadMessage *)msg error:(FlutterError *_Nullable *_Nonnull)error;
 @end
 
 extern void FLTVideoPlayerApiSetup(id<FlutterBinaryMessenger> binaryMessenger, NSObject<FLTVideoPlayerApi> *_Nullable api);

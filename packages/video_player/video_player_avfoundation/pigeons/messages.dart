@@ -62,6 +62,13 @@ class MixWithOthersMessage {
   bool mixWithOthers;
 }
 
+class PreloadMessage {
+  PreloadMessage(this.urls, this.shouldPreloadFirstSegment);
+
+  List<String?> urls;
+  bool shouldPreloadFirstSegment;
+}
+
 @HostApi(dartHostTestHandler: 'TestHostVideoPlayerApi')
 abstract class VideoPlayerApi {
   @ObjCSelector('initialize')
@@ -86,4 +93,6 @@ abstract class VideoPlayerApi {
   void pause(TextureMessage msg);
   @ObjCSelector('setMixWithOthers:')
   void setMixWithOthers(MixWithOthersMessage msg);
+  @ObjCSelector('preload:')
+  void preload(PreloadMessage msg);
 }

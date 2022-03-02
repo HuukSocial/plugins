@@ -105,7 +105,10 @@ abstract class VideoPlayerPlatform extends PlatformInterface {
   }
 
   /// preload
-  Future<void> preload(String url, bool shouldPreloadFirstSegment) {
+  Future<void> preload(
+    List<String> urls,
+    bool shouldPreloadFirstSegment,
+  ) {
     throw UnimplementedError('preload() has not been implemented.');
   }
 }

@@ -14,6 +14,7 @@ import com.google.android.exoplayer2.MediaItem;
 import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -247,29 +248,32 @@ public class VideoPlayerPlugin implements FlutterPlugin, VideoPlayerApi {
     @Override
     public void preload(Messages.PreloadMessage msg) {
         // check for prevent duplicate preload call
-        if (preloadMediaUrls.contains(msg.getUrl())) return;
-        // add to flags
-        preloadMediaUrls.add(msg.getUrl());
-        // call executor to start preload
-        preloadExecutorService.execute(() -> {
-            Log.d(TAG, "Start Preload: " + msg.getUrl());
-            CustomHlsDownloader hlsDownloader =
-                    new CustomHlsDownloader(
-                            new MediaItem.Builder()
-                                    .setUri(Uri.parse(msg.getUrl()))
-                                    .setMediaId(msg.getUrl())
-                                    .setCustomCacheKey(msg.getUrl())
-                                    .build(),
-                            VideoPlayer.getWriteableCacheDataSourceFactory(flutterState.applicationContext),
-                            msg.getShouldPreloadFirstSegment());
-            try {
-                hlsDownloader.download((contentLength, bytesDownloaded, percentDownloaded) -> {
-                });
-            } catch (Exception e) {
-                Log.e(TAG, e.toString());
-                preloadMediaUrls.remove(msg.getUrl());
-            }
-        });
+        final List<String> urls = msg.getUrls();
+        for (String url : urls) {
+            if (preloadMediaUrls.contains(url)) return;
+            // add to flags
+            preloadMediaUrls.add(url);
+            // call executor to start preload
+            preloadExecutorService.execute(() -> {
+                Log.d(TAG, "Start Preload: " + url);
+                CustomHlsDownloader hlsDownloader =
+                        new CustomHlsDownloader(
+                                new MediaItem.Builder()
+                                        .setUri(Uri.parse(url))
+                                        .setMediaId(url)
+                                        .setCustomCacheKey(url)
+                                        .build(),
+                                VideoPlayer.getWriteableCacheDataSourceFactory(flutterState.applicationContext),
+                                msg.getShouldPreloadFirstSegment());
+                try {
+                    hlsDownloader.download((contentLength, bytesDownloaded, percentDownloaded) -> {
+                    });
+                } catch (Exception e) {
+                    Log.e(TAG, e.toString());
+                    preloadMediaUrls.remove(url);
+                }
+            });
+        }
     }
 
     private interface KeyForAssetFn {

@@ -443,13 +443,13 @@ public class Messages {
 
   /** Generated class from Pigeon that represents data sent in messages. */
   public static class PreloadMessage {
-    private @NonNull String url;
-    public @NonNull String getUrl() { return url; }
-    public void setUrl(@NonNull String setterArg) {
+    private @NonNull List<String> urls;
+    public @NonNull List<String> getUrls() { return urls; }
+    public void setUrls(@NonNull List<String> setterArg) {
       if (setterArg == null) {
-        throw new IllegalStateException("Nonnull field \"url\" is null.");
+        throw new IllegalStateException("Nonnull field \"urls\" is null.");
       }
-      this.url = setterArg;
+      this.urls = setterArg;
     }
 
     private @NonNull Boolean shouldPreloadFirstSegment;
@@ -464,9 +464,9 @@ public class Messages {
     /** Constructor is private to enforce null safety; use Builder. */
     private PreloadMessage() {}
     public static class Builder {
-      private @Nullable String url;
-      public @NonNull Builder setUrl(@NonNull String setterArg) {
-        this.url = setterArg;
+      private @Nullable List<String> urls;
+      public @NonNull Builder setUrls(@NonNull List<String> setterArg) {
+        this.urls = setterArg;
         return this;
       }
       private @Nullable Boolean shouldPreloadFirstSegment;
@@ -476,21 +476,21 @@ public class Messages {
       }
       public @NonNull PreloadMessage build() {
         PreloadMessage pigeonReturn = new PreloadMessage();
-        pigeonReturn.setUrl(url);
+        pigeonReturn.setUrls(urls);
         pigeonReturn.setShouldPreloadFirstSegment(shouldPreloadFirstSegment);
         return pigeonReturn;
       }
     }
     @NonNull Map<String, Object> toMap() {
       Map<String, Object> toMapResult = new HashMap<>();
-      toMapResult.put("url", url);
+      toMapResult.put("urls", urls);
       toMapResult.put("shouldPreloadFirstSegment", shouldPreloadFirstSegment);
       return toMapResult;
     }
     static @NonNull PreloadMessage fromMap(@NonNull Map<String, Object> map) {
       PreloadMessage pigeonResult = new PreloadMessage();
-      Object url = map.get("url");
-      pigeonResult.setUrl((String)url);
+      Object urls = map.get("urls");
+      pigeonResult.setUrls((List<String>)urls);
       Object shouldPreloadFirstSegment = map.get("shouldPreloadFirstSegment");
       pigeonResult.setShouldPreloadFirstSegment((Boolean)shouldPreloadFirstSegment);
       return pigeonResult;

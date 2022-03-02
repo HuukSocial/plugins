@@ -58,6 +58,10 @@ static id GetNullableObject(NSDictionary* dict, id key) {
 + (FLTMixWithOthersMessage *)fromMap:(NSDictionary *)dict;
 - (NSDictionary *)toMap;
 @end
+@interface FLTPreloadMessage ()
++ (FLTPreloadMessage *)fromMap:(NSDictionary *)dict;
+- (NSDictionary *)toMap;
+@end
 
 @implementation FLTTextureMessage
 + (instancetype)makeWithTextureId:(NSNumber *)textureId {
@@ -210,6 +214,27 @@ static id GetNullableObject(NSDictionary* dict, id key) {
 }
 @end
 
+@implementation FLTPreloadMessage
++ (instancetype)makeWithUrls:(NSArray<NSString *> *)urls
+    shouldPreloadFirstSegment:(NSNumber *)shouldPreloadFirstSegment {
+  FLTPreloadMessage* pigeonResult = [[FLTPreloadMessage alloc] init];
+  pigeonResult.urls = urls;
+  pigeonResult.shouldPreloadFirstSegment = shouldPreloadFirstSegment;
+  return pigeonResult;
+}
++ (FLTPreloadMessage *)fromMap:(NSDictionary *)dict {
+  FLTPreloadMessage *pigeonResult = [[FLTPreloadMessage alloc] init];
+  pigeonResult.urls = GetNullableObject(dict, @"urls");
+  NSAssert(pigeonResult.urls != nil, @"");
+  pigeonResult.shouldPreloadFirstSegment = GetNullableObject(dict, @"shouldPreloadFirstSegment");
+  NSAssert(pigeonResult.shouldPreloadFirstSegment != nil, @"");
+  return pigeonResult;
+}
+- (NSDictionary *)toMap {
+  return [NSDictionary dictionaryWithObjectsAndKeys:(self.urls ? self.urls : [NSNull null]), @"urls", (self.shouldPreloadFirstSegment ? self.shouldPreloadFirstSegment : [NSNull null]), @"shouldPreloadFirstSegment", nil];
+}
+@end
+
 @interface FLTVideoPlayerApiCodecReader : FlutterStandardReader
 @end
 @implementation FLTVideoPlayerApiCodecReader
@@ -232,9 +257,12 @@ static id GetNullableObject(NSDictionary* dict, id key) {
       return [FLTPositionMessage fromMap:[self readValue]];
     
     case 133:     
-      return [FLTTextureMessage fromMap:[self readValue]];
+      return [FLTPreloadMessage fromMap:[self readValue]];
     
     case 134:     
+      return [FLTTextureMessage fromMap:[self readValue]];
+    
+    case 135:     
       return [FLTVolumeMessage fromMap:[self readValue]];
     
     default:    
@@ -269,12 +297,16 @@ static id GetNullableObject(NSDictionary* dict, id key) {
     [self writeByte:132];
     [self writeValue:[value toMap]];
   } else 
-  if ([value isKindOfClass:[FLTTextureMessage class]]) {
+  if ([value isKindOfClass:[FLTPreloadMessage class]]) {
     [self writeByte:133];
     [self writeValue:[value toMap]];
   } else 
-  if ([value isKindOfClass:[FLTVolumeMessage class]]) {
+  if ([value isKindOfClass:[FLTTextureMessage class]]) {
     [self writeByte:134];
+    [self writeValue:[value toMap]];
+  } else 
+  if ([value isKindOfClass:[FLTVolumeMessage class]]) {
+    [self writeByte:135];
     [self writeValue:[value toMap]];
   } else 
 {
@@ -517,6 +549,26 @@ void FLTVideoPlayerApiSetup(id<FlutterBinaryMessenger> binaryMessenger, NSObject
         FLTMixWithOthersMessage *arg_msg = args[0];
         FlutterError *error;
         [api setMixWithOthers:arg_msg error:&error];
+        callback(wrapResult(nil, error));
+      }];
+    }
+    else {
+      [channel setMessageHandler:nil];
+    }
+  }
+  {
+    FlutterBasicMessageChannel *channel =
+      [FlutterBasicMessageChannel
+        messageChannelWithName:@"dev.flutter.pigeon.VideoPlayerApi.preload"
+        binaryMessenger:binaryMessenger
+        codec:FLTVideoPlayerApiGetCodec()];
+    if (api) {
+      NSCAssert([api respondsToSelector:@selector(preload:error:)], @"FLTVideoPlayerApi api (%@) doesn't respond to @selector(preload:error:)", api);
+      [channel setMessageHandler:^(id _Nullable message, FlutterReply callback) {
+        NSArray *args = message;
+        FLTPreloadMessage *arg_msg = args[0];
+        FlutterError *error;
+        [api preload:arg_msg error:&error];
         callback(wrapResult(nil, error));
       }];
     }

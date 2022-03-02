@@ -147,12 +147,12 @@ class MixWithOthersMessage {
 }
 
 class PreloadMessage {
-  String? url;
+  List<Object?>? urls;
   bool? shouldPreloadFirstSegment;
 
   Object encode() {
     final Map<Object?, Object?> pigeonMap = <Object?, Object?>{};
-    pigeonMap['url'] = url;
+    pigeonMap['urls'] = urls;
     pigeonMap['shouldPreloadFirstSegment'] = shouldPreloadFirstSegment;
     return pigeonMap;
   }
@@ -160,7 +160,7 @@ class PreloadMessage {
   static PreloadMessage decode(Object message) {
     final Map<Object?, Object?> pigeonMap = message as Map<Object?, Object?>;
     return PreloadMessage()
-      ..url = pigeonMap['url'] as String?
+      ..urls = pigeonMap['urls'] as List<Object?>?
       ..shouldPreloadFirstSegment = pigeonMap['shouldPreloadFirstSegment'] as bool?;
   }
 }

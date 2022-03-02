@@ -44,7 +44,7 @@ class MixWithOthersMessage {
 }
 
 class PreloadMessage {
-  String url;
+  List<String> urls;
   bool shouldPreloadFirstSegment;
 }
 

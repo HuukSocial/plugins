@@ -15,29 +15,34 @@ import 'package:pigeon/pigeon.dart';
 ))
 class TextureMessage {
   TextureMessage(this.textureId);
+
   int textureId;
 }
 
 class LoopingMessage {
   LoopingMessage(this.textureId, this.isLooping);
+
   int textureId;
   bool isLooping;
 }
 
 class VolumeMessage {
   VolumeMessage(this.textureId, this.volume);
+
   int textureId;
   double volume;
 }
 
 class PlaybackSpeedMessage {
   PlaybackSpeedMessage(this.textureId, this.speed);
+
   int textureId;
   double speed;
 }
 
 class PositionMessage {
   PositionMessage(this.textureId, this.position);
+
   int textureId;
   int position;
 }
@@ -58,27 +63,40 @@ class CreateMessage {
 
 class MixWithOthersMessage {
   MixWithOthersMessage(this.mixWithOthers);
+
   bool mixWithOthers;
 }
 
 class PreloadMessage {
-  PreloadMessage(this.url, this.shouldPreloadFirstSegment);
-  String url;
+  PreloadMessage(this.urls, this.shouldPreloadFirstSegment);
+
+  List<String?> urls;
   bool shouldPreloadFirstSegment;
 }
 
 @HostApi(dartHostTestHandler: 'TestHostVideoPlayerApi')
 abstract class VideoPlayerApi {
   void initialize();
+
   TextureMessage create(CreateMessage msg);
+
   void dispose(TextureMessage msg);
+
   void setLooping(LoopingMessage msg);
+
   void setVolume(VolumeMessage msg);
+
   void setPlaybackSpeed(PlaybackSpeedMessage msg);
+
   void play(TextureMessage msg);
+
   PositionMessage position(TextureMessage msg);
+
   void seekTo(PositionMessage msg);
+
   void pause(TextureMessage msg);
+
   void setMixWithOthers(MixWithOthersMessage msg);
+
   void preload(PreloadMessage msg);
 }

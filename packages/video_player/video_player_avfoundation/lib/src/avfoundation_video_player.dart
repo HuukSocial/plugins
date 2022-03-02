@@ -166,6 +166,19 @@ class AVFoundationVideoPlayer extends VideoPlayerPlatform {
         .setMixWithOthers(MixWithOthersMessage(mixWithOthers: mixWithOthers));
   }
 
+  @override
+  Future<void> preload(
+    List<String> urls,
+    bool shouldPreloadFirstSegment,
+  ) {
+    return _api.preload(
+      PreloadMessage(
+        urls: urls,
+        shouldPreloadFirstSegment: shouldPreloadFirstSegment,
+      ),
+    );
+  }
+
   EventChannel _eventChannelFor(int textureId) {
     return EventChannel('flutter.io/videoPlayer/videoEvents$textureId');
   }

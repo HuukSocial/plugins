@@ -114,7 +114,7 @@ class AndroidVideoPlayer extends VideoPlayerPlatform {
   @override
   Future<Duration> getPosition(int textureId) async {
     final PositionMessage response =
-        await _api.position(TextureMessage(textureId: textureId));
+    await _api.position(TextureMessage(textureId: textureId));
     return Duration(milliseconds: response.position);
   }
 
@@ -165,9 +165,13 @@ class AndroidVideoPlayer extends VideoPlayerPlatform {
   }
 
   @override
-  Future<void> preload(String url) {
-    return _api
-        .preload(PreloadMessage(url: url));
+  Future<void> preload(String url, bool shouldPreloadFirstSegment) {
+    return _api.preload(
+      PreloadMessage(
+        url: url,
+        shouldPreloadFirstSegment: shouldPreloadFirstSegment,
+      ),
+    );
   }
 
   EventChannel _eventChannelFor(int textureId) {
@@ -175,7 +179,7 @@ class AndroidVideoPlayer extends VideoPlayerPlatform {
   }
 
   static const Map<VideoFormat, String> _videoFormatStringMap =
-      <VideoFormat, String>{
+  <VideoFormat, String>{
     VideoFormat.ss: 'ss',
     VideoFormat.hls: 'hls',
     VideoFormat.dash: 'dash',

@@ -57,8 +57,9 @@ class MixWithOthersMessage {
 }
 
 class PreloadMessage {
-  PreloadMessage(this.url);
+  PreloadMessage(this.url, this.shouldPreloadFirstSegment);
   String url;
+  bool shouldPreloadFirstSegment;
 }
 
 @HostApi(dartHostTestHandler: 'TestHostVideoPlayerApi')

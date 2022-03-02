@@ -23,21 +23,24 @@ import java.util.List;
 import java.util.concurrent.Executor;
 
 public final class CustomHlsDownloader extends SegmentDownloader<HlsPlaylist> {
-    public CustomHlsDownloader(MediaItem mediaItem, CacheDataSource.Factory cacheDataSourceFactory) {
-        this(mediaItem, cacheDataSourceFactory, Runnable::run);
+    final boolean shouldPreloadFirstSegment;
+
+    public CustomHlsDownloader(MediaItem mediaItem, CacheDataSource.Factory cacheDataSourceFactory, boolean shouldPreloadFirstSegment) {
+        this(mediaItem, cacheDataSourceFactory, Runnable::run, shouldPreloadFirstSegment);
     }
 
     public CustomHlsDownloader(
-            MediaItem mediaItem, CacheDataSource.Factory cacheDataSourceFactory, Executor executor) {
-        this(mediaItem, new HlsPlaylistParser(), cacheDataSourceFactory, executor);
+            MediaItem mediaItem, CacheDataSource.Factory cacheDataSourceFactory, Executor executor, boolean shouldPreloadFirstSegment) {
+        this(mediaItem, new HlsPlaylistParser(), cacheDataSourceFactory, executor, shouldPreloadFirstSegment);
     }
 
     public CustomHlsDownloader(
             MediaItem mediaItem,
             Parser<HlsPlaylist> manifestParser,
             CacheDataSource.Factory cacheDataSourceFactory,
-            Executor executor) {
+            Executor executor, boolean shouldPreloadFirstSegment) {
         super(mediaItem, manifestParser, cacheDataSourceFactory, executor);
+        this.shouldPreloadFirstSegment = shouldPreloadFirstSegment;
     }
 
     @Override
@@ -85,7 +88,7 @@ public final class CustomHlsDownloader extends SegmentDownloader<HlsPlaylist> {
             if (segment.startTimeUs == 0) {
                 if (segment.dataSpec.uri.toString().endsWith("m3u8")) {
                     filteredSegments.add(segment);
-                } else if (!isAddedFirstTsSegment) {
+                } else if (shouldPreloadFirstSegment && !isAddedFirstTsSegment) {
                     filteredSegments.add(segment);
                     isAddedFirstTsSegment = true;
                 }

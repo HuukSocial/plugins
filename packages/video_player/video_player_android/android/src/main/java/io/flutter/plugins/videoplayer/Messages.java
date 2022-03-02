@@ -434,6 +434,15 @@ public class Messages {
       this.url = setterArg;
     }
 
+    private @NonNull Boolean shouldPreloadFirstSegment;
+    public @NonNull Boolean getShouldPreloadFirstSegment() { return shouldPreloadFirstSegment; }
+    public void setShouldPreloadFirstSegment(@NonNull Boolean setterArg) {
+      if (setterArg == null) {
+        throw new IllegalStateException("Nonnull field \"shouldPreloadFirstSegment\" is null.");
+      }
+      this.shouldPreloadFirstSegment = setterArg;
+    }
+
     /** Constructor is private to enforce null safety; use Builder. */
     private PreloadMessage() {}
     public static class Builder {
@@ -442,21 +451,30 @@ public class Messages {
         this.url = setterArg;
         return this;
       }
+      private @Nullable Boolean shouldPreloadFirstSegment;
+      public @NonNull Builder setShouldPreloadFirstSegment(@NonNull Boolean setterArg) {
+        this.shouldPreloadFirstSegment = setterArg;
+        return this;
+      }
       public @NonNull PreloadMessage build() {
         PreloadMessage pigeonReturn = new PreloadMessage();
         pigeonReturn.setUrl(url);
+        pigeonReturn.setShouldPreloadFirstSegment(shouldPreloadFirstSegment);
         return pigeonReturn;
       }
     }
     @NonNull Map<String, Object> toMap() {
       Map<String, Object> toMapResult = new HashMap<>();
       toMapResult.put("url", url);
+      toMapResult.put("shouldPreloadFirstSegment", shouldPreloadFirstSegment);
       return toMapResult;
     }
     static @NonNull PreloadMessage fromMap(@NonNull Map<String, Object> map) {
       PreloadMessage pigeonResult = new PreloadMessage();
       Object url = map.get("url");
       pigeonResult.setUrl((String)url);
+      Object shouldPreloadFirstSegment = map.get("shouldPreloadFirstSegment");
+      pigeonResult.setShouldPreloadFirstSegment((Boolean)shouldPreloadFirstSegment);
       return pigeonResult;
     }
   }

@@ -30,8 +30,8 @@ VideoPlayerPlatform get _videoPlayerPlatform {
 }
 
 /// preload a network url
-void preload(String url) {
-  _videoPlayerPlatform.preload(url);
+void preload({required String url, bool shouldPreloadFirstSegment = true}) {
+  _videoPlayerPlatform.preload(url, shouldPreloadFirstSegment);
 }
 
 /// The duration, current position, buffering state, error state and settings

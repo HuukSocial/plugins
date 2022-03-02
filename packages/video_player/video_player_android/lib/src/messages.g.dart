@@ -193,13 +193,16 @@ class MixWithOthersMessage {
 class PreloadMessage {
   PreloadMessage({
     required this.url,
+    required this.shouldPreloadFirstSegment,
   });
 
   String url;
+  bool shouldPreloadFirstSegment;
 
   Object encode() {
     final Map<Object?, Object?> pigeonMap = <Object?, Object?>{};
     pigeonMap['url'] = url;
+    pigeonMap['shouldPreloadFirstSegment'] = shouldPreloadFirstSegment;
     return pigeonMap;
   }
 
@@ -207,6 +210,7 @@ class PreloadMessage {
     final Map<Object?, Object?> pigeonMap = message as Map<Object?, Object?>;
     return PreloadMessage(
       url: pigeonMap['url']! as String,
+      shouldPreloadFirstSegment: pigeonMap['shouldPreloadFirstSegment']! as bool,
     );
   }
 }

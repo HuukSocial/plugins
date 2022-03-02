@@ -41,8 +41,8 @@ import io.flutter.view.TextureRegistry;
 public class VideoPlayerPlugin implements FlutterPlugin, VideoPlayerApi {
     private static final String TAG = "VideoPlayerPlugin";
     private final LongSparseArray<VideoPlayer> videoPlayers = new LongSparseArray<>();
+    private final VideoPlayerOptions options = new VideoPlayerOptions();
     private FlutterState flutterState;
-    private VideoPlayerOptions options = new VideoPlayerOptions();
 
     // Executors will limit the number of thread running preload -> prevent high cpu usage -> crash
     private final ExecutorService preloadExecutorService = Executors.newFixedThreadPool(2);
@@ -249,11 +249,10 @@ public class VideoPlayerPlugin implements FlutterPlugin, VideoPlayerApi {
                                     .setMediaId(msg.getUrl())
                                     .setCustomCacheKey(msg.getUrl())
                                     .build(),
-                            VideoPlayer.getWriteableCacheDataSourceFactory(flutterState.applicationContext)
-                    );
+                            VideoPlayer.getWriteableCacheDataSourceFactory(flutterState.applicationContext),
+                            msg.getShouldPreloadFirstSegment());
             try {
                 hlsDownloader.download((contentLength, bytesDownloaded, percentDownloaded) -> {
-                    Log.d(TAG, "Preloading " + msg.getUrl() + " " + bytesDownloaded + " bytes");
                 });
             } catch (Exception e) {
                 Log.e(TAG, e.toString());

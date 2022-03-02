@@ -24,16 +24,11 @@ import com.google.android.exoplayer2.Player.Listener;
 import com.google.android.exoplayer2.audio.AudioAttributes;
 import com.google.android.exoplayer2.database.DatabaseProvider;
 import com.google.android.exoplayer2.database.StandaloneDatabaseProvider;
-import com.google.android.exoplayer2.ext.cronet.CronetDataSource;
-import com.google.android.exoplayer2.ext.cronet.CronetUtil;
-import com.google.android.exoplayer2.offline.StreamKey;
 import com.google.android.exoplayer2.source.MediaSource;
-import com.google.android.exoplayer2.source.MediaSourceFactory;
 import com.google.android.exoplayer2.source.ProgressiveMediaSource;
 import com.google.android.exoplayer2.source.dash.DashMediaSource;
 import com.google.android.exoplayer2.source.dash.DefaultDashChunkSource;
 import com.google.android.exoplayer2.source.hls.HlsMediaSource;
-import com.google.android.exoplayer2.source.hls.playlist.HlsMasterPlaylist;
 import com.google.android.exoplayer2.source.smoothstreaming.DefaultSsChunkSource;
 import com.google.android.exoplayer2.source.smoothstreaming.SsMediaSource;
 import com.google.android.exoplayer2.trackselection.DefaultTrackSelector;
@@ -45,20 +40,15 @@ import com.google.android.exoplayer2.upstream.cache.Cache;
 import com.google.android.exoplayer2.upstream.cache.CacheDataSource;
 import com.google.android.exoplayer2.upstream.cache.NoOpCacheEvictor;
 import com.google.android.exoplayer2.upstream.cache.SimpleCache;
+import com.google.android.exoplayer2.util.EventLogger;
 import com.google.android.exoplayer2.util.Util;
 
-import org.chromium.net.CronetEngine;
-
 import java.io.File;
-import java.net.CookieHandler;
-import java.net.CookieManager;
-import java.net.CookiePolicy;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.Executors;
 
 import io.flutter.plugin.common.EventChannel;
 import io.flutter.view.TextureRegistry;
@@ -69,7 +59,6 @@ final class VideoPlayer {
     private static final String FORMAT_HLS = "hls";
     private static final String FORMAT_OTHER = "other";
 
-    private static final boolean USE_CRONET_FOR_NETWORKING = true;
     private static final String DOWNLOAD_CONTENT_DIRECTORY = "exoCaches";
 
     private ExoPlayer exoPlayer;
@@ -86,12 +75,11 @@ final class VideoPlayer {
 
     private final VideoPlayerOptions options;
 
-    private static CacheDataSource.Factory cacheDataSourceFactory;
+    private static CacheDataSource.Factory readOnlyCacheDataSourceFactory;
+    private static CacheDataSource.Factory writeableCacheDataSourceFactory;
     private static HttpDataSource.Factory httpDataSourceFactory;
     private static Cache cache;
     private static DatabaseProvider databaseProvider;
-
-    public static StreamKey hlsPreloadStreamKey = new StreamKey(HlsMasterPlaylist.GROUP_INDEX_VARIANT, 0);
 
     VideoPlayer(
             Context context,
@@ -106,25 +94,23 @@ final class VideoPlayer {
         this.options = options;
 
         DefaultTrackSelector trackSelector = new DefaultTrackSelector(context);
-        DataSource.Factory dataSourceFactory = getDataSourceFactory(context);
-        MediaSourceFactory mediaSourceFactory = new HlsMediaSource
-                .Factory(dataSourceFactory)
-                .setAllowChunklessPreparation(true);
-
-        MediaItem mediaItem = new MediaItem.Builder()
-                .setUri(dataSource)
-                .setMediaId(dataSource)
-                .setCustomCacheKey(dataSource)
-                .setStreamKeys(Collections.singletonList(hlsPreloadStreamKey))
-                .build();
+        HlsMediaSource hlsMediaSource =
+                new HlsMediaSource.Factory(getReadOnlyCacheDataSourceFactory(context))
+                        .setAllowChunklessPreparation(true)
+                        .createMediaSource(
+                                new MediaItem.Builder()
+                                        .setUri(dataSource)
+                                        .setMediaId(dataSource)
+                                        .setCustomCacheKey(dataSource)
+                                        .build()
+                        );
 
         exoPlayer = new ExoPlayer.Builder(context)
-                .setMediaSourceFactory(mediaSourceFactory)
                 .setTrackSelector(trackSelector)
                 .build();
-        exoPlayer.setMediaItem(mediaItem);
+        exoPlayer.setMediaSource(hlsMediaSource);
+        exoPlayer.addAnalyticsListener(new EventLogger(trackSelector));
         exoPlayer.prepare();
-
         setupVideoPlayer(eventChannel, textureEntry);
     }
 
@@ -332,38 +318,35 @@ final class VideoPlayer {
         }
     }
 
-    public static synchronized CacheDataSource.Factory getDataSourceFactory(Context context) {
-        if (cacheDataSourceFactory == null) {
+    public static synchronized CacheDataSource.Factory getWriteableCacheDataSourceFactory(Context context) {
+        if (writeableCacheDataSourceFactory == null) {
             context = context.getApplicationContext();
-            DefaultDataSource.Factory upstreamFactory =
-                    new DefaultDataSource.Factory(context, getHttpDataSourceFactory(context));
-            cacheDataSourceFactory = buildCacheDataSource(upstreamFactory, getDownloadCache(context));
+            writeableCacheDataSourceFactory = new CacheDataSource.Factory()
+                    .setCache(getCache(context))
+                    .setUpstreamDataSourceFactory(getHttpDataSourceFactory());
         }
-        return cacheDataSourceFactory;
+        return writeableCacheDataSourceFactory;
     }
 
-    private static synchronized HttpDataSource.Factory getHttpDataSourceFactory(Context context) {
+    public static synchronized CacheDataSource.Factory getReadOnlyCacheDataSourceFactory(Context context) {
+        if (readOnlyCacheDataSourceFactory == null) {
+            context = context.getApplicationContext();
+            readOnlyCacheDataSourceFactory = new CacheDataSource.Factory()
+                    .setCache(getCache(context))
+                    .setUpstreamDataSourceFactory(getHttpDataSourceFactory())
+                    .setCacheWriteDataSinkFactory(null);
+        }
+        return readOnlyCacheDataSourceFactory;
+    }
+
+    private static synchronized HttpDataSource.Factory getHttpDataSourceFactory() {
         if (httpDataSourceFactory == null) {
-            if (USE_CRONET_FOR_NETWORKING) {
-                context = context.getApplicationContext();
-                CronetEngine cronetEngine = CronetUtil.buildCronetEngine(context);
-                if (cronetEngine != null) {
-                    httpDataSourceFactory =
-                            new CronetDataSource.Factory(cronetEngine, Executors.newSingleThreadExecutor());
-                }
-            }
-            if (httpDataSourceFactory == null) {
-                // We don't want to use Cronet, or we failed to instantiate a CronetEngine.
-                CookieManager cookieManager = new CookieManager();
-                cookieManager.setCookiePolicy(CookiePolicy.ACCEPT_ORIGINAL_SERVER);
-                CookieHandler.setDefault(cookieManager);
-                httpDataSourceFactory = new DefaultHttpDataSource.Factory();
-            }
+            httpDataSourceFactory = new DefaultHttpDataSource.Factory();
         }
         return httpDataSourceFactory;
     }
 
-    private static synchronized Cache getDownloadCache(Context context) {
+    private static synchronized Cache getCache(Context context) {
         if (cache == null) {
             File downloadContentDirectory = new File(context.getCacheDir(), DOWNLOAD_CONTENT_DIRECTORY);
             cache =
@@ -378,12 +361,5 @@ final class VideoPlayer {
             databaseProvider = new StandaloneDatabaseProvider(context);
         }
         return databaseProvider;
-    }
-
-    private static CacheDataSource.Factory buildCacheDataSource(
-            DataSource.Factory upstreamFactory, Cache cache) {
-        return new CacheDataSource.Factory()
-                .setCache(cache)
-                .setUpstreamDataSourceFactory(upstreamFactory);
     }
 }

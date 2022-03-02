@@ -10,14 +10,11 @@ import android.os.Build;
 import android.util.LongSparseArray;
 
 import com.google.android.exoplayer2.MediaItem;
-import com.google.android.exoplayer2.source.hls.offline.HlsDownloader;
 
 import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Map;
-import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -48,11 +45,9 @@ public class VideoPlayerPlugin implements FlutterPlugin, VideoPlayerApi {
     private VideoPlayerOptions options = new VideoPlayerOptions();
 
     // Executors will limit the number of thread running preload -> prevent high cpu usage -> crash
-    private final ExecutorService executorService = Executors.newFixedThreadPool(2);
+    private final ExecutorService preloadExecutorService = Executors.newFixedThreadPool(2);
     // This list will be a flag to prevent duplicate preload call for one url
     private final ArrayList<String> preloadMediaUrls = new ArrayList<>();
-    // Limit of precache for each video
-    private final int limitPrecacheBytes = 2 * 1024 * 1024;
 
     /**
      * Register this with the v2 embedding for the plugin to respond to lifecycle callbacks.
@@ -245,26 +240,21 @@ public class VideoPlayerPlugin implements FlutterPlugin, VideoPlayerApi {
         // add to flags
         preloadMediaUrls.add(msg.getUrl());
         // call executor to start preload
-        executorService.execute(() -> {
+        preloadExecutorService.execute(() -> {
             Log.d(TAG, "Start Preload: " + msg.getUrl());
-            HlsDownloader hlsDownloader =
-                    new HlsDownloader(
+            CustomHlsDownloader hlsDownloader =
+                    new CustomHlsDownloader(
                             new MediaItem.Builder()
                                     .setUri(Uri.parse(msg.getUrl()))
-                                    .setCustomCacheKey(msg.getUrl())
                                     .setMediaId(msg.getUrl())
-                                    .setStreamKeys(Collections.singletonList(VideoPlayer.hlsPreloadStreamKey))
+                                    .setCustomCacheKey(msg.getUrl())
                                     .build(),
-                            VideoPlayer.getDataSourceFactory(flutterState.applicationContext));
+                            VideoPlayer.getWriteableCacheDataSourceFactory(flutterState.applicationContext)
+                    );
             try {
                 hlsDownloader.download((contentLength, bytesDownloaded, percentDownloaded) -> {
-                    // stop download when enough data
-                    if (bytesDownloaded >= limitPrecacheBytes) {
-                        Log.d(TAG, "Done Preload: " + msg.getUrl() + " of: " + bytesDownloaded + " bytes");
-                        hlsDownloader.cancel();
-                    }
+                    Log.d(TAG, "Preloading " + msg.getUrl() + " " + bytesDownloaded + " bytes");
                 });
-            } catch (CancellationException ignored) {
             } catch (Exception e) {
                 Log.e(TAG, e.toString());
                 preloadMediaUrls.remove(msg.getUrl());

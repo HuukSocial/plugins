@@ -218,10 +218,14 @@ class _BumbleBeeRemoteVideoState extends State<_BumbleBeeRemoteVideo> {
   @override
   void initState() {
     super.initState();
+    final config = {
+      'maxResolution': {'maxWidth': 1920.0, 'maxHeight': 1920.0}
+    };
     _controller = VideoPlayerController.network(
-      'https://flutter.github.io/assets-for-api-docs/assets/videos/bee.mp4',
+      'https://du1cqvp35pinp.cloudfront.net/video/5573/main.m3u8',
       closedCaptionFile: _loadCaptions(),
       videoPlayerOptions: VideoPlayerOptions(mixWithOthers: true),
+      resolutionConfig: config,
     );
 
     _controller.addListener(() {

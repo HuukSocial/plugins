@@ -50,6 +50,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.google.android.exoplayer2.trackselection.AdaptiveTrackSelection;
+import com.google.android.exoplayer2.trackselection.DefaultTrackSelector;
+
 import io.flutter.plugin.common.EventChannel;
 import io.flutter.view.TextureRegistry;
 
@@ -88,12 +91,17 @@ final class VideoPlayer {
             String dataSource,
             String formatHint,
             @NonNull Map<String, String> httpHeaders,
+            HashMap resolution,
             VideoPlayerOptions options) {
         this.eventChannel = eventChannel;
         this.textureEntry = textureEntry;
         this.options = options;
 
-        DefaultTrackSelector trackSelector = new DefaultTrackSelector(context);
+        AdaptiveTrackSelection.Factory trackSelection = new AdaptiveTrackSelection.Factory();
+        DefaultTrackSelector trackSelector = new DefaultTrackSelector(context, trackSelection);
+        DefaultTrackSelector.Parameters param = new DefaultTrackSelector.ParametersBuilder(context).setMaxVideoSize((int) Double.parseDouble(resolution.get("maxWidth").toString()), (int) Double.parseDouble(resolution.get("maxHeight").toString())).build();
+        trackSelector.setParameters(param);
+
         HlsMediaSource hlsMediaSource =
                 new HlsMediaSource.Factory(getReadOnlyCacheDataSourceFactory(context))
                         .setAllowChunklessPreparation(true)

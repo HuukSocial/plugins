@@ -29,6 +29,7 @@ class CreateMessage {
   String? packageName;
   String? formatHint;
   Map<Object?, Object?>? httpHeaders;
+  Map<String, dynamic>? resolutionConfig;
 
   Object encode() {
     final Map<Object?, Object?> pigeonMap = <Object?, Object?>{};
@@ -37,6 +38,7 @@ class CreateMessage {
     pigeonMap['packageName'] = packageName;
     pigeonMap['formatHint'] = formatHint;
     pigeonMap['httpHeaders'] = httpHeaders;
+    pigeonMap['resolutionConfig'] = resolutionConfig;
     return pigeonMap;
   }
 
@@ -47,7 +49,9 @@ class CreateMessage {
       ..uri = pigeonMap['uri'] as String?
       ..packageName = pigeonMap['packageName'] as String?
       ..formatHint = pigeonMap['formatHint'] as String?
-      ..httpHeaders = pigeonMap['httpHeaders'] as Map<Object?, Object?>?;
+      ..httpHeaders = pigeonMap['httpHeaders'] as Map<Object?, Object?>?
+      ..resolutionConfig =
+          pigeonMap['resolutionConfig'] as Map<String, dynamic>?;
   }
 }
 

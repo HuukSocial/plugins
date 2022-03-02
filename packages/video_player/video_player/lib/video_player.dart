@@ -211,7 +211,10 @@ class VideoPlayerController extends ValueNotifier<VideoPlayerValue> {
   /// null. The [package] argument must be non-null when the asset comes from a
   /// package and null otherwise.
   VideoPlayerController.asset(this.dataSource,
-      {this.package, this.closedCaptionFile, this.videoPlayerOptions})
+      {this.package,
+      this.closedCaptionFile,
+      this.videoPlayerOptions,
+      this.resolutionConfig})
       : dataSourceType = DataSourceType.asset,
         formatHint = null,
         httpHeaders = const {},
@@ -232,6 +235,7 @@ class VideoPlayerController extends ValueNotifier<VideoPlayerValue> {
     this.closedCaptionFile,
     this.videoPlayerOptions,
     this.httpHeaders = const {},
+    this.resolutionConfig,
   })  : dataSourceType = DataSourceType.network,
         package = null,
         super(VideoPlayerValue(duration: Duration.zero));
@@ -240,9 +244,12 @@ class VideoPlayerController extends ValueNotifier<VideoPlayerValue> {
   ///
   /// This will load the file from the file-URI given by:
   /// `'file://${file.path}'`.
-  VideoPlayerController.file(File file,
-      {this.closedCaptionFile, this.videoPlayerOptions})
-      : dataSource = 'file://${file.path}',
+  VideoPlayerController.file(
+    File file, {
+    this.closedCaptionFile,
+    this.videoPlayerOptions,
+    this.resolutionConfig,
+  })  : dataSource = 'file://${file.path}',
         dataSourceType = DataSourceType.file,
         package = null,
         formatHint = null,
@@ -253,9 +260,12 @@ class VideoPlayerController extends ValueNotifier<VideoPlayerValue> {
   ///
   /// This will load the video from the input content-URI.
   /// This is supported on Android only.
-  VideoPlayerController.contentUri(Uri contentUri,
-      {this.closedCaptionFile, this.videoPlayerOptions})
-      : assert(defaultTargetPlatform == TargetPlatform.android,
+  VideoPlayerController.contentUri(
+    Uri contentUri, {
+    this.closedCaptionFile,
+    this.videoPlayerOptions,
+    this.resolutionConfig,
+  })  : assert(defaultTargetPlatform == TargetPlatform.android,
             'VideoPlayerController.contentUri is only supported on Android.'),
         dataSource = contentUri.toString(),
         dataSourceType = DataSourceType.contentUri,
@@ -283,6 +293,9 @@ class VideoPlayerController extends ValueNotifier<VideoPlayerValue> {
 
   /// Provide additional configuration options (optional). Like setting the audio mode to mix
   final VideoPlayerOptions? videoPlayerOptions;
+
+  /// Add resolution config to player
+  final Map<String, dynamic>? resolutionConfig;
 
   /// Only set for [asset] videos. The package that the asset was loaded from.
   final String? package;
@@ -324,6 +337,7 @@ class VideoPlayerController extends ValueNotifier<VideoPlayerValue> {
           sourceType: DataSourceType.asset,
           asset: dataSource,
           package: package,
+          resolutionConfig: resolutionConfig ?? {},
         );
         break;
       case DataSourceType.network:
@@ -332,18 +346,21 @@ class VideoPlayerController extends ValueNotifier<VideoPlayerValue> {
           uri: dataSource,
           formatHint: formatHint,
           httpHeaders: httpHeaders,
+          resolutionConfig: resolutionConfig ?? {},
         );
         break;
       case DataSourceType.file:
         dataSourceDescription = DataSource(
           sourceType: DataSourceType.file,
           uri: dataSource,
+          resolutionConfig: resolutionConfig ?? {},
         );
         break;
       case DataSourceType.contentUri:
         dataSourceDescription = DataSource(
           sourceType: DataSourceType.contentUri,
           uri: dataSource,
+          resolutionConfig: resolutionConfig ?? {},
         );
         break;
     }

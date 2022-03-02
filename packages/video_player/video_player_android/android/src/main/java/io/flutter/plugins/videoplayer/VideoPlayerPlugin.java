@@ -35,6 +35,14 @@ import io.flutter.plugins.videoplayer.Messages.VideoPlayerApi;
 import io.flutter.plugins.videoplayer.Messages.VolumeMessage;
 import io.flutter.view.TextureRegistry;
 
+import java.security.KeyManagementException;
+import java.security.NoSuchAlgorithmException;
+import java.util.Map;
+
+import javax.net.ssl.HttpsURLConnection;
+
+import java.util.HashMap;
+
 /**
  * Android platform implementation of the VideoPlayerPlugin.
  */
@@ -143,6 +151,8 @@ public class VideoPlayerPlugin implements FlutterPlugin, VideoPlayerApi {
         EventChannel eventChannel =
                 new EventChannel(
                         flutterState.binaryMessenger, "flutter.io/videoPlayer/videoEvents" + handle.id());
+        Object maxResolution = arg.getResolutionConfig().get("maxResolution");
+        HashMap resolution = (HashMap) maxResolution;
 
         VideoPlayer player;
         if (arg.getAsset() != null) {
@@ -161,6 +171,7 @@ public class VideoPlayerPlugin implements FlutterPlugin, VideoPlayerApi {
                             "asset:///" + assetLookupKey,
                             null,
                             null,
+                            resolution,
                             options);
         } else {
             @SuppressWarnings("unchecked")
@@ -173,6 +184,7 @@ public class VideoPlayerPlugin implements FlutterPlugin, VideoPlayerApi {
                             arg.getUri(),
                             arg.getFormatHint(),
                             httpHeaders,
+                            resolution,
                             options);
         }
         videoPlayers.put(handle.id(), player);

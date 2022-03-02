@@ -151,8 +151,7 @@ public class VideoPlayerPlugin implements FlutterPlugin, VideoPlayerApi {
         EventChannel eventChannel =
                 new EventChannel(
                         flutterState.binaryMessenger, "flutter.io/videoPlayer/videoEvents" + handle.id());
-        Object maxResolution = arg.getResolutionConfig().get("maxResolution");
-        HashMap resolution = (HashMap) maxResolution;
+        HashMap maxResolution = (HashMap) arg.getResolutionConfig();
 
         VideoPlayer player;
         if (arg.getAsset() != null) {
@@ -171,7 +170,7 @@ public class VideoPlayerPlugin implements FlutterPlugin, VideoPlayerApi {
                             "asset:///" + assetLookupKey,
                             null,
                             null,
-                            resolution,
+                            maxResolution,
                             options);
         } else {
             @SuppressWarnings("unchecked")
@@ -184,7 +183,7 @@ public class VideoPlayerPlugin implements FlutterPlugin, VideoPlayerApi {
                             arg.getUri(),
                             arg.getFormatHint(),
                             httpHeaders,
-                            resolution,
+                            maxResolution,
                             options);
         }
         videoPlayers.put(handle.id(), player);

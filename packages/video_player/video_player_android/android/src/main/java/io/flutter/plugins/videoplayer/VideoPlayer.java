@@ -99,7 +99,13 @@ final class VideoPlayer {
 
         AdaptiveTrackSelection.Factory trackSelection = new AdaptiveTrackSelection.Factory();
         DefaultTrackSelector trackSelector = new DefaultTrackSelector(context, trackSelection);
-        DefaultTrackSelector.Parameters param = new DefaultTrackSelector.ParametersBuilder(context).setMaxVideoSize((int) Double.parseDouble(resolution.get("maxWidth").toString()), (int) Double.parseDouble(resolution.get("maxHeight").toString())).build();
+        DefaultTrackSelector.Parameters param = new DefaultTrackSelector
+                .ParametersBuilder(context)
+                .setMaxVideoSize(
+                        (int) Double.parseDouble(resolution.get("maxWidth").toString()),
+                        (int) Double.parseDouble(resolution.get("maxHeight").toString())
+                )
+                .build();
         trackSelector.setParameters(param);
 
         HlsMediaSource hlsMediaSource =

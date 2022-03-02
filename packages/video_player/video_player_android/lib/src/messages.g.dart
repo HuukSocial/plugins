@@ -139,6 +139,7 @@ class CreateMessage {
     this.packageName,
     this.formatHint,
     required this.httpHeaders,
+    required this.resolutionConfig,
   });
 
   String? asset;
@@ -146,6 +147,7 @@ class CreateMessage {
   String? packageName;
   String? formatHint;
   Map<String?, String?> httpHeaders;
+  Map<String?, double?> resolutionConfig;
 
   Object encode() {
     final Map<Object?, Object?> pigeonMap = <Object?, Object?>{};
@@ -154,6 +156,7 @@ class CreateMessage {
     pigeonMap['packageName'] = packageName;
     pigeonMap['formatHint'] = formatHint;
     pigeonMap['httpHeaders'] = httpHeaders;
+    pigeonMap['resolutionConfig'] = resolutionConfig;
     return pigeonMap;
   }
 
@@ -165,6 +168,7 @@ class CreateMessage {
       packageName: pigeonMap['packageName'] as String?,
       formatHint: pigeonMap['formatHint'] as String?,
       httpHeaders: (pigeonMap['httpHeaders'] as Map<Object?, Object?>?)!.cast<String?, String?>(),
+      resolutionConfig: (pigeonMap['resolutionConfig'] as Map<Object?, Object?>?)!.cast<String?, double?>(),
     );
   }
 }

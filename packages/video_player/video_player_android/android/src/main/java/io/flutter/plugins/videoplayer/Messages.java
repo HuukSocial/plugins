@@ -322,6 +322,15 @@ public class Messages {
       this.httpHeaders = setterArg;
     }
 
+    private @NonNull Map<String, Double> resolutionConfig;
+    public @NonNull Map<String, Double> getResolutionConfig() { return resolutionConfig; }
+    public void setResolutionConfig(@NonNull Map<String, Double> setterArg) {
+      if (setterArg == null) {
+        throw new IllegalStateException("Nonnull field \"resolutionConfig\" is null.");
+      }
+      this.resolutionConfig = setterArg;
+    }
+
     /** Constructor is private to enforce null safety; use Builder. */
     private CreateMessage() {}
     public static class Builder {
@@ -350,6 +359,11 @@ public class Messages {
         this.httpHeaders = setterArg;
         return this;
       }
+      private @Nullable Map<String, Double> resolutionConfig;
+      public @NonNull Builder setResolutionConfig(@NonNull Map<String, Double> setterArg) {
+        this.resolutionConfig = setterArg;
+        return this;
+      }
       public @NonNull CreateMessage build() {
         CreateMessage pigeonReturn = new CreateMessage();
         pigeonReturn.setAsset(asset);
@@ -357,6 +371,7 @@ public class Messages {
         pigeonReturn.setPackageName(packageName);
         pigeonReturn.setFormatHint(formatHint);
         pigeonReturn.setHttpHeaders(httpHeaders);
+        pigeonReturn.setResolutionConfig(resolutionConfig);
         return pigeonReturn;
       }
     }
@@ -367,6 +382,7 @@ public class Messages {
       toMapResult.put("packageName", packageName);
       toMapResult.put("formatHint", formatHint);
       toMapResult.put("httpHeaders", httpHeaders);
+      toMapResult.put("resolutionConfig", resolutionConfig);
       return toMapResult;
     }
     static @NonNull CreateMessage fromMap(@NonNull Map<String, Object> map) {
@@ -381,6 +397,8 @@ public class Messages {
       pigeonResult.setFormatHint((String)formatHint);
       Object httpHeaders = map.get("httpHeaders");
       pigeonResult.setHttpHeaders((Map<String, String>)httpHeaders);
+      Object resolutionConfig = map.get("resolutionConfig");
+      pigeonResult.setResolutionConfig((Map<String, Double>)resolutionConfig);
       return pigeonResult;
     }
   }

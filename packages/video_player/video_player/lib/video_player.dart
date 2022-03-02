@@ -295,7 +295,7 @@ class VideoPlayerController extends ValueNotifier<VideoPlayerValue> {
   final VideoPlayerOptions? videoPlayerOptions;
 
   /// Add resolution config to player
-  final Map<String, dynamic>? resolutionConfig;
+  final Map<String, double>? resolutionConfig;
 
   /// Only set for [asset] videos. The package that the asset was loaded from.
   final String? package;

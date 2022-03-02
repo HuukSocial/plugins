@@ -133,7 +133,7 @@ class DataSource {
     this.asset,
     this.package,
     this.httpHeaders = const <String, String>{},
-    this.resolutionConfig = const <String, dynamic>{},
+    this.resolutionConfig = const <String, double>{},
   });
 
   /// The way in which the video was originally loaded.
@@ -157,8 +157,8 @@ class DataSource {
   /// Always empty for other video types.
   Map<String, String> httpHeaders;
 
-  // For congif resolution
-  Map<String, dynamic> resolutionConfig;
+  // For config resolution
+  Map<String, double> resolutionConfig;
 
   /// The name of the asset. Only set for [DataSourceType.asset] videos.
   final String? asset;

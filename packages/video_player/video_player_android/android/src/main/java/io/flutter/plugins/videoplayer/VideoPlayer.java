@@ -84,6 +84,8 @@ final class VideoPlayer {
     private static Cache cache;
     private static DatabaseProvider databaseProvider;
 
+    private static int size480MaxWidth = 854;
+
     VideoPlayer(
             Context context,
             EventChannel eventChannel,
@@ -97,19 +99,28 @@ final class VideoPlayer {
         this.textureEntry = textureEntry;
         this.options = options;
 
+        final int maxWidth = (int) Double.parseDouble(resolution.get("maxWidth").toString());
+        final int maxHeight = (int) Double.parseDouble(resolution.get("maxHeight").toString());
+
+        final boolean shouldCacheWhilePlaying = maxHeight == size480MaxWidth || maxWidth == size480MaxWidth;
+
         AdaptiveTrackSelection.Factory trackSelection = new AdaptiveTrackSelection.Factory();
         DefaultTrackSelector trackSelector = new DefaultTrackSelector(context, trackSelection);
         DefaultTrackSelector.Parameters param = new DefaultTrackSelector
                 .ParametersBuilder(context)
-                .setMaxVideoSize(
-                        (int) Double.parseDouble(resolution.get("maxWidth").toString()),
-                        (int) Double.parseDouble(resolution.get("maxHeight").toString())
-                )
+                .setMaxVideoSize(maxWidth, maxHeight)
                 .build();
         trackSelector.setParameters(param);
 
+        CacheDataSource.Factory cacheDatasourceFactory;
+        if (shouldCacheWhilePlaying) {
+            cacheDatasourceFactory = getWriteableCacheDataSourceFactory(context);
+        } else {
+            cacheDatasourceFactory = getReadOnlyCacheDataSourceFactory(context);
+        }
+
         HlsMediaSource hlsMediaSource =
-                new HlsMediaSource.Factory(getReadOnlyCacheDataSourceFactory(context))
+                new HlsMediaSource.Factory(cacheDatasourceFactory)
                         .setAllowChunklessPreparation(true)
                         .createMediaSource(
                                 new MediaItem.Builder()

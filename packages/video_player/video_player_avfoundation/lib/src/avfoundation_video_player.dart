@@ -38,6 +38,7 @@ class AVFoundationVideoPlayer extends VideoPlayerPlatform {
     String? uri;
     String? formatHint;
     Map<String, String> httpHeaders = <String, String>{};
+    Map<String, double> resolutionConfig = dataSource.resolutionConfig;
     switch (dataSource.sourceType) {
       case DataSourceType.asset:
         asset = dataSource.asset;
@@ -61,6 +62,7 @@ class AVFoundationVideoPlayer extends VideoPlayerPlatform {
       uri: uri,
       httpHeaders: httpHeaders,
       formatHint: formatHint,
+      resolutionConfig: resolutionConfig,
     );
 
     final TextureMessage response = await _api.create(message);

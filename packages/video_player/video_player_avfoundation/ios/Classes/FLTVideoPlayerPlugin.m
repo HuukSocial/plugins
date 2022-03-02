@@ -193,9 +193,8 @@ NS_INLINE CGFloat radiansToDegrees(CGFloat radians) {
   AVPlayerItem* item = [AVPlayerItem playerItemWithAsset:urlAsset];
 
   if (resolutionConfig) {
-    NSDictionary *maxResolution = resolutionConfig[@"maxResolution"];
-    NSNumber *maxWidth = maxResolution[@"maxWidth"];
-    NSNumber *maxHeight = maxResolution[@"maxHeight"];
+    NSNumber *maxWidth = resolutionConfig[@"maxWidth"];
+    NSNumber *maxHeight = resolutionConfig[@"maxHeight"];
     NSLog(@"Set width is %f, height is: %f", [maxWidth doubleValue], [maxHeight doubleValue]);
     if (@available(iOS 11.0, *)) {
       item.preferredMaximumResolution = CGSizeMake([maxWidth floatValue], [maxHeight floatValue]);

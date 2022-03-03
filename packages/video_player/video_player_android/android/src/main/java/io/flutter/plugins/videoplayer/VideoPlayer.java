@@ -31,6 +31,7 @@ import com.google.android.exoplayer2.source.dash.DefaultDashChunkSource;
 import com.google.android.exoplayer2.source.hls.HlsMediaSource;
 import com.google.android.exoplayer2.source.smoothstreaming.DefaultSsChunkSource;
 import com.google.android.exoplayer2.source.smoothstreaming.SsMediaSource;
+import com.google.android.exoplayer2.trackselection.AdaptiveTrackSelection;
 import com.google.android.exoplayer2.trackselection.DefaultTrackSelector;
 import com.google.android.exoplayer2.upstream.DataSource;
 import com.google.android.exoplayer2.upstream.DefaultDataSource;
@@ -49,8 +50,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import com.google.android.exoplayer2.trackselection.AdaptiveTrackSelection;
 
 import io.flutter.plugin.common.EventChannel;
 import io.flutter.view.TextureRegistry;
@@ -105,6 +104,7 @@ final class VideoPlayer {
         DefaultTrackSelector.Parameters param = new DefaultTrackSelector
                 .ParametersBuilder(context)
                 .setMaxVideoSize(maxWidth, maxHeight)
+                .setViewportSize(maxWidth, maxHeight, false)
                 .build();
         trackSelector.setParameters(param);
 

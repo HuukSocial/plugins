@@ -38,7 +38,7 @@ import com.google.android.exoplayer2.upstream.DefaultHttpDataSource;
 import com.google.android.exoplayer2.upstream.HttpDataSource;
 import com.google.android.exoplayer2.upstream.cache.Cache;
 import com.google.android.exoplayer2.upstream.cache.CacheDataSource;
-import com.google.android.exoplayer2.upstream.cache.NoOpCacheEvictor;
+import com.google.android.exoplayer2.upstream.cache.LeastRecentlyUsedCacheEvictor;
 import com.google.android.exoplayer2.upstream.cache.SimpleCache;
 import com.google.android.exoplayer2.util.EventLogger;
 import com.google.android.exoplayer2.util.Util;
@@ -63,6 +63,7 @@ final class VideoPlayer {
     private static final String FORMAT_OTHER = "other";
 
     private static final String DOWNLOAD_CONTENT_DIRECTORY = "exoCaches";
+    private static final long MAX_CACHE_SIZE = 10L * 1024 * 1024 * 1024; // 10GB
 
     private ExoPlayer exoPlayer;
 
@@ -376,7 +377,10 @@ final class VideoPlayer {
             File downloadContentDirectory = new File(context.getCacheDir(), DOWNLOAD_CONTENT_DIRECTORY);
             cache =
                     new SimpleCache(
-                            downloadContentDirectory, new NoOpCacheEvictor(), getDatabaseProvider(context));
+                            downloadContentDirectory,
+                            new LeastRecentlyUsedCacheEvictor(MAX_CACHE_SIZE),
+                            getDatabaseProvider(context)
+                    );
         }
         return cache;
     }

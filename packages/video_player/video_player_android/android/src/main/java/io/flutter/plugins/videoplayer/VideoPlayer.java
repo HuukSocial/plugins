@@ -51,7 +51,6 @@ import java.util.List;
 import java.util.Map;
 
 import com.google.android.exoplayer2.trackselection.AdaptiveTrackSelection;
-import com.google.android.exoplayer2.trackselection.DefaultTrackSelector;
 
 import io.flutter.plugin.common.EventChannel;
 import io.flutter.view.TextureRegistry;
@@ -79,13 +78,9 @@ final class VideoPlayer {
 
     private final VideoPlayerOptions options;
 
-    private static CacheDataSource.Factory readOnlyCacheDataSourceFactory;
-    private static CacheDataSource.Factory writeableCacheDataSourceFactory;
-    private static HttpDataSource.Factory httpDataSourceFactory;
+    private static final int size480MaxWidth = 854;
     private static Cache cache;
     private static DatabaseProvider databaseProvider;
-
-    private static int size480MaxWidth = 854;
 
     VideoPlayer(
             Context context,
@@ -344,32 +339,23 @@ final class VideoPlayer {
         }
     }
 
-    public static synchronized CacheDataSource.Factory getWriteableCacheDataSourceFactory(Context context) {
-        if (writeableCacheDataSourceFactory == null) {
-            context = context.getApplicationContext();
-            writeableCacheDataSourceFactory = new CacheDataSource.Factory()
-                    .setCache(getCache(context))
-                    .setUpstreamDataSourceFactory(getHttpDataSourceFactory());
-        }
-        return writeableCacheDataSourceFactory;
+    public static CacheDataSource.Factory getWriteableCacheDataSourceFactory(Context context) {
+        return new CacheDataSource.Factory()
+                .setCache(getCache(context))
+                .setFlags(CacheDataSource.FLAG_IGNORE_CACHE_ON_ERROR)
+                .setUpstreamDataSourceFactory(getHttpDataSourceFactory());
     }
 
-    public static synchronized CacheDataSource.Factory getReadOnlyCacheDataSourceFactory(Context context) {
-        if (readOnlyCacheDataSourceFactory == null) {
-            context = context.getApplicationContext();
-            readOnlyCacheDataSourceFactory = new CacheDataSource.Factory()
-                    .setCache(getCache(context))
-                    .setUpstreamDataSourceFactory(getHttpDataSourceFactory())
-                    .setCacheWriteDataSinkFactory(null);
-        }
-        return readOnlyCacheDataSourceFactory;
+    public static CacheDataSource.Factory getReadOnlyCacheDataSourceFactory(Context context) {
+        return new CacheDataSource.Factory()
+                .setCache(getCache(context))
+                .setUpstreamDataSourceFactory(getHttpDataSourceFactory())
+                .setFlags(CacheDataSource.FLAG_IGNORE_CACHE_ON_ERROR)
+                .setCacheWriteDataSinkFactory(null);
     }
 
-    private static synchronized HttpDataSource.Factory getHttpDataSourceFactory() {
-        if (httpDataSourceFactory == null) {
-            httpDataSourceFactory = new DefaultHttpDataSource.Factory();
-        }
-        return httpDataSourceFactory;
+    private static HttpDataSource.Factory getHttpDataSourceFactory() {
+        return new DefaultHttpDataSource.Factory();
     }
 
     private static synchronized Cache getCache(Context context) {

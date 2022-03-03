@@ -54,7 +54,7 @@ public class VideoPlayerPlugin implements FlutterPlugin, VideoPlayerApi {
     private FlutterState flutterState;
 
     // Executors will limit the number of thread running preload -> prevent high cpu usage -> crash
-    private final ExecutorService preloadExecutorService = Executors.newFixedThreadPool(2);
+    private final ExecutorService preloadExecutorService = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors() / 2);
     // This list will be a flag to prevent duplicate preload call for one url
     private final ArrayList<String> preloadMediaUrls = new ArrayList<>();
 

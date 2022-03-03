@@ -82,17 +82,20 @@ public final class CustomHlsDownloader extends SegmentDownloader<HlsPlaylist> {
             }
         }
 
+        // this filter will get all m3u8 and take the first ts segment if shouldPreloadFirstSegment is true
         ArrayList<Segment> filteredSegments = new ArrayList<>();
-        boolean isAddedFirstTsSegment = false;
+        Segment firstMediaSegment = null;
         for (Segment segment : segments) {
             if (segment.startTimeUs == 0) {
                 if (segment.dataSpec.uri.toString().endsWith("m3u8")) {
                     filteredSegments.add(segment);
-                } else if (shouldPreloadFirstSegment && !isAddedFirstTsSegment) {
-                    filteredSegments.add(segment);
-                    isAddedFirstTsSegment = true;
+                } else if (firstMediaSegment == null) {
+                    firstMediaSegment = segment;
                 }
             }
+        }
+        if (shouldPreloadFirstSegment && firstMediaSegment != null) {
+            filteredSegments.add(firstMediaSegment);
         }
         return filteredSegments;
     }

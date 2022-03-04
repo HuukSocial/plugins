@@ -14,16 +14,16 @@ import android.view.Surface;
 import androidx.annotation.NonNull;
 
 import com.google.android.exoplayer2.C;
-import com.google.android.exoplayer2.ExoPlayer;
+import com.google.android.exoplayer2.ExoPlaybackException;
 import com.google.android.exoplayer2.Format;
 import com.google.android.exoplayer2.MediaItem;
-import com.google.android.exoplayer2.PlaybackException;
 import com.google.android.exoplayer2.PlaybackParameters;
 import com.google.android.exoplayer2.Player;
 import com.google.android.exoplayer2.Player.Listener;
+import com.google.android.exoplayer2.SimpleExoPlayer;
 import com.google.android.exoplayer2.audio.AudioAttributes;
 import com.google.android.exoplayer2.database.DatabaseProvider;
-import com.google.android.exoplayer2.database.StandaloneDatabaseProvider;
+import com.google.android.exoplayer2.database.ExoDatabaseProvider;
 import com.google.android.exoplayer2.source.MediaSource;
 import com.google.android.exoplayer2.source.ProgressiveMediaSource;
 import com.google.android.exoplayer2.source.dash.DashMediaSource;
@@ -34,7 +34,7 @@ import com.google.android.exoplayer2.source.smoothstreaming.SsMediaSource;
 import com.google.android.exoplayer2.trackselection.AdaptiveTrackSelection;
 import com.google.android.exoplayer2.trackselection.DefaultTrackSelector;
 import com.google.android.exoplayer2.upstream.DataSource;
-import com.google.android.exoplayer2.upstream.DefaultDataSource;
+import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory;
 import com.google.android.exoplayer2.upstream.DefaultHttpDataSource;
 import com.google.android.exoplayer2.upstream.HttpDataSource;
 import com.google.android.exoplayer2.upstream.cache.Cache;
@@ -55,15 +55,15 @@ import io.flutter.plugin.common.EventChannel;
 import io.flutter.view.TextureRegistry;
 
 final class VideoPlayer {
+    private static final String DOWNLOAD_CONTENT_DIRECTORY = "exoCaches";
+    private static final long MAX_CACHE_SIZE = 10L * 1024 * 1024 * 1024; // 10GB
+
     private static final String FORMAT_SS = "ss";
     private static final String FORMAT_DASH = "dash";
     private static final String FORMAT_HLS = "hls";
     private static final String FORMAT_OTHER = "other";
 
-    private static final String DOWNLOAD_CONTENT_DIRECTORY = "exoCaches";
-    private static final long MAX_CACHE_SIZE = 10L * 1024 * 1024 * 1024; // 10GB
-
-    private ExoPlayer exoPlayer;
+    private SimpleExoPlayer exoPlayer;
 
     private Surface surface;
 
@@ -99,39 +99,33 @@ final class VideoPlayer {
 
         final boolean shouldCacheWhilePlaying = maxHeight == size480MaxWidth || maxWidth == size480MaxWidth;
 
-        AdaptiveTrackSelection.Factory trackSelection = new AdaptiveTrackSelection.Factory();
-        DefaultTrackSelector trackSelector = new DefaultTrackSelector(context, trackSelection);
-        DefaultTrackSelector.Parameters param = new DefaultTrackSelector
-                .ParametersBuilder(context)
-                .setMaxVideoSize(maxWidth, maxHeight)
-                .setViewportSize(maxWidth, maxHeight, false)
-                .build();
-        trackSelector.setParameters(param);
+        Uri uri = Uri.parse(dataSource);
 
-        CacheDataSource.Factory cacheDatasourceFactory;
-        if (shouldCacheWhilePlaying) {
-            cacheDatasourceFactory = getWriteableCacheDataSourceFactory(context);
+        DataSource.Factory dataSourceFactory;
+        if (isHTTP(uri)) {
+            DefaultHttpDataSource.Factory httpDataSourceFactory =
+                    new DefaultHttpDataSource.Factory()
+                            .setUserAgent("ExoPlayer")
+                            .setAllowCrossProtocolRedirects(true);
+
+            if (httpHeaders != null && !httpHeaders.isEmpty()) {
+                httpDataSourceFactory.setDefaultRequestProperties(httpHeaders);
+            }
+            dataSourceFactory = httpDataSourceFactory;
         } else {
-            cacheDatasourceFactory = getReadOnlyCacheDataSourceFactory(context);
+            dataSourceFactory = new DefaultDataSourceFactory(context, "ExoPlayer");
         }
 
-        HlsMediaSource hlsMediaSource =
-                new HlsMediaSource.Factory(cacheDatasourceFactory)
-                        .setAllowChunklessPreparation(true)
-                        .createMediaSource(
-                                new MediaItem.Builder()
-                                        .setUri(dataSource)
-                                        .setMediaId(dataSource)
-                                        .setCustomCacheKey(dataSource)
-                                        .build()
-                        );
-
-        exoPlayer = new ExoPlayer.Builder(context)
+        DefaultTrackSelector trackSelector = buildTrackSelector(uri, formatHint, context, maxWidth, maxHeight);
+        exoPlayer = new SimpleExoPlayer
+                .Builder(context)
                 .setTrackSelector(trackSelector)
                 .build();
-        exoPlayer.setMediaSource(hlsMediaSource);
+        MediaSource mediaSource = buildMediaSource(uri, dataSourceFactory, formatHint, context, shouldCacheWhilePlaying);
+        exoPlayer.setMediaSource(mediaSource);
         exoPlayer.addAnalyticsListener(new EventLogger(trackSelector));
         exoPlayer.prepare();
+
         setupVideoPlayer(eventChannel, textureEntry);
     }
 
@@ -144,7 +138,7 @@ final class VideoPlayer {
     }
 
     private MediaSource buildMediaSource(
-            Uri uri, DataSource.Factory mediaDataSourceFactory, String formatHint, Context context) {
+            Uri uri, DataSource.Factory mediaDataSourceFactory, String formatHint, Context context, boolean shouldCacheWhilePlaying) {
         int type;
         if (formatHint == null) {
             type = Util.inferContentType(uri.getLastPathSegment());
@@ -171,19 +165,78 @@ final class VideoPlayer {
             case C.TYPE_SS:
                 return new SsMediaSource.Factory(
                         new DefaultSsChunkSource.Factory(mediaDataSourceFactory),
-                        new DefaultDataSource.Factory(context, mediaDataSourceFactory))
+                        new DefaultDataSourceFactory(context, null, mediaDataSourceFactory))
                         .createMediaSource(MediaItem.fromUri(uri));
             case C.TYPE_DASH:
                 return new DashMediaSource.Factory(
                         new DefaultDashChunkSource.Factory(mediaDataSourceFactory),
-                        new DefaultDataSource.Factory(context, mediaDataSourceFactory))
+                        new DefaultDataSourceFactory(context, null, mediaDataSourceFactory))
                         .createMediaSource(MediaItem.fromUri(uri));
             case C.TYPE_HLS:
-                return new HlsMediaSource.Factory(mediaDataSourceFactory)
-                        .createMediaSource(MediaItem.fromUri(uri));
+                CacheDataSource.Factory cacheDatasourceFactory;
+                if (shouldCacheWhilePlaying) {
+                    cacheDatasourceFactory = getWriteableCacheDataSourceFactory(context);
+                } else {
+                    cacheDatasourceFactory = getReadOnlyCacheDataSourceFactory(context);
+                }
+
+                return new HlsMediaSource.Factory(cacheDatasourceFactory)
+                        .setAllowChunklessPreparation(true)
+                        .createMediaSource(
+                                new MediaItem.Builder()
+                                        .setUri(uri)
+                                        .setMediaId(uri.toString())
+                                        .setCustomCacheKey(uri.toString())
+                                        .build()
+                        );
             case C.TYPE_OTHER:
                 return new ProgressiveMediaSource.Factory(mediaDataSourceFactory)
                         .createMediaSource(MediaItem.fromUri(uri));
+            default: {
+                throw new IllegalStateException("Unsupported type: " + type);
+            }
+        }
+    }
+
+    private DefaultTrackSelector buildTrackSelector(
+            Uri uri, String formatHint, Context context, int maxWidth, int maxHeight) {
+        int type;
+        if (formatHint == null) {
+            type = Util.inferContentType(uri.getLastPathSegment());
+        } else {
+            switch (formatHint) {
+                case FORMAT_SS:
+                    type = C.TYPE_SS;
+                    break;
+                case FORMAT_DASH:
+                    type = C.TYPE_DASH;
+                    break;
+                case FORMAT_HLS:
+                    type = C.TYPE_HLS;
+                    break;
+                case FORMAT_OTHER:
+                    type = C.TYPE_OTHER;
+                    break;
+                default:
+                    type = -1;
+                    break;
+            }
+        }
+        switch (type) {
+            case C.TYPE_SS:
+            case C.TYPE_DASH:
+            case C.TYPE_OTHER:
+                return new DefaultTrackSelector(context);
+            case C.TYPE_HLS:
+                AdaptiveTrackSelection.Factory trackSelection = new AdaptiveTrackSelection.Factory();
+                DefaultTrackSelector trackSelector = new DefaultTrackSelector(context, trackSelection);
+                DefaultTrackSelector.Parameters param = new DefaultTrackSelector
+                        .ParametersBuilder(context)
+                        .setMaxVideoSize(maxWidth, maxHeight)
+                        .setViewportSize(maxWidth, maxHeight, false)
+                        .build();
+                trackSelector.setParameters(param);
+                return trackSelector;
             default: {
                 throw new IllegalStateException("Unsupported type: " + type);
             }
@@ -244,7 +297,7 @@ final class VideoPlayer {
                     }
 
                     @Override
-                    public void onPlayerError(PlaybackException error) {
+                    public void onPlayerError(ExoPlaybackException error) {
                         setBuffering(false);
                         if (eventSink != null) {
                             eventSink.error("VideoError", "Video player had error " + error, null);
@@ -263,7 +316,7 @@ final class VideoPlayer {
     }
 
     @SuppressWarnings("deprecation")
-    private static void setAudioAttributes(ExoPlayer exoPlayer, boolean isMixMode) {
+    private static void setAudioAttributes(SimpleExoPlayer exoPlayer, boolean isMixMode) {
         exoPlayer.setAudioAttributes(
                 new AudioAttributes.Builder().setContentType(C.CONTENT_TYPE_MOVIE).build(), !isMixMode);
     }
@@ -373,7 +426,7 @@ final class VideoPlayer {
 
     private static synchronized DatabaseProvider getDatabaseProvider(Context context) {
         if (databaseProvider == null) {
-            databaseProvider = new StandaloneDatabaseProvider(context);
+            databaseProvider = new ExoDatabaseProvider(context);
         }
         return databaseProvider;
     }

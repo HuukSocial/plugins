@@ -56,7 +56,7 @@ import io.flutter.view.TextureRegistry;
 
 final class VideoPlayer {
     private static final String DOWNLOAD_CONTENT_DIRECTORY = "exoCaches";
-    private static final long MAX_CACHE_SIZE = 10L * 1024 * 1024 * 1024; // 10GB
+    private static final long MAX_CACHE_SIZE = 3L * 1024 * 1024 * 1024; // 3GB
 
     private static final String FORMAT_SS = "ss";
     private static final String FORMAT_DASH = "dash";
@@ -413,7 +413,7 @@ final class VideoPlayer {
 
     private static synchronized Cache getCache(Context context) {
         if (cache == null) {
-            File downloadContentDirectory = new File(context.getCacheDir(), DOWNLOAD_CONTENT_DIRECTORY);
+            File downloadContentDirectory = new File(context.getFilesDir(), DOWNLOAD_CONTENT_DIRECTORY);
             cache =
                     new SimpleCache(
                             downloadContentDirectory,

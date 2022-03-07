@@ -41,7 +41,6 @@ import com.google.android.exoplayer2.upstream.cache.Cache;
 import com.google.android.exoplayer2.upstream.cache.CacheDataSource;
 import com.google.android.exoplayer2.upstream.cache.LeastRecentlyUsedCacheEvictor;
 import com.google.android.exoplayer2.upstream.cache.SimpleCache;
-import com.google.android.exoplayer2.util.EventLogger;
 import com.google.android.exoplayer2.util.Util;
 
 import java.io.File;
@@ -123,7 +122,6 @@ final class VideoPlayer {
                 .build();
         MediaSource mediaSource = buildMediaSource(uri, dataSourceFactory, formatHint, context, shouldCacheWhilePlaying);
         exoPlayer.setMediaSource(mediaSource);
-        exoPlayer.addAnalyticsListener(new EventLogger(trackSelector));
         exoPlayer.prepare();
 
         setupVideoPlayer(eventChannel, textureEntry);

@@ -21,7 +21,7 @@ abstract class TestHostVideoPlayerApi {
   void seekTo(PositionMessage arg);
   void pause(TextureMessage arg);
   void setMixWithOthers(MixWithOthersMessage arg);
-  void preload(PreloadMessage arg);
+  void predownloadAndCache(PreloadMessage arg);
   static void setup(TestHostVideoPlayerApi? api) {
     {
       const BasicMessageChannel<Object?> channel =
@@ -178,14 +178,14 @@ abstract class TestHostVideoPlayerApi {
     }
     {
       const BasicMessageChannel<Object?> channel =
-          BasicMessageChannel<Object?>('dev.flutter.pigeon.VideoPlayerApi.preload', StandardMessageCodec());
+          BasicMessageChannel<Object?>('dev.flutter.pigeon.VideoPlayerApi.predownloadAndCache', StandardMessageCodec());
       if (api == null) {
         channel.setMockMessageHandler(null);
       } else {
         channel.setMockMessageHandler((Object? message) async {
-          assert(message != null, 'Argument for dev.flutter.pigeon.VideoPlayerApi.preload was null. Expected PreloadMessage.');
+          assert(message != null, 'Argument for dev.flutter.pigeon.VideoPlayerApi.predownloadAndCache was null. Expected PreloadMessage.');
           final PreloadMessage input = PreloadMessage.decode(message!);
-          api.preload(input);
+          api.predownloadAndCache(input);
           return <Object?, Object?>{};
         });
       }

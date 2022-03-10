@@ -246,7 +246,7 @@ public class VideoPlayerPlugin implements FlutterPlugin, VideoPlayerApi {
     }
 
     @Override
-    public void preload(Messages.PreloadMessage msg) {
+    public void predownloadAndCache(Messages.PreloadMessage msg) {
         // check for prevent duplicate preload call
         final List<String> urls = msg.getUrls();
         for (String url : urls) {

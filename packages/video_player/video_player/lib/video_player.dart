@@ -29,9 +29,12 @@ VideoPlayerPlatform get _videoPlayerPlatform {
   return currentInstance;
 }
 
-/// preload a network url
-void preload({required List<String> urls, bool shouldPreloadFirstSegment = true}) {
-  _videoPlayerPlatform.preload(urls, shouldPreloadFirstSegment);
+/// VideoPlayerCacheManager
+class VideoPlayerCacheManager {
+  /// preload a network url
+  static void predownloadAndCache({required List<String> urls, bool shouldPreloadFirstSegment = true}) {
+    _videoPlayerPlatform.predownloadAndCache(urls, shouldPreloadFirstSegment);
+  }
 }
 
 /// The duration, current position, buffering state, error state and settings

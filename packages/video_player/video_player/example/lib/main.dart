@@ -19,21 +19,86 @@ void main() {
   );
 }
 
-class FirstPage extends StatelessWidget {
+class FirstPage extends StatefulWidget {
   FirstPage({Key? key}) : super(key: key);
 
-  final listId = [
+  @override
+  State<FirstPage> createState() => _FirstPageState();
+}
+
+class _FirstPageState extends State<FirstPage> {
+  final listId1 = [
+    // 6499,
+    6406,
     6378,
     6301,
     6248,
     6247,
     6246,
     6244,
+    6213,
+    6211,
+    6202,
+  ];
+
+  final listId2 = [
     6085,
     6084,
     5766,
     5671,
     5670,
+    5669,
+    5668,
+    5613,
+    5611,
+    5608,
+  ];
+
+  final listId3 = [
+    5607,
+    5605,
+    5600,
+    5593,
+    5592,
+    5591,
+    5564,
+    5559,
+    5481,
+    5473,
+  ];
+
+  final listId4 = [
+    5467,
+    5466,
+    5432,
+    5423,
+    5423,
+    5423,
+    5423,
+    5423,
+    5423,
+    5423,
+  ];
+
+  final listId5 = [
+    5390,
+    5381,
+    5380,
+    5210,
+    5191,
+    5190,
+    5150,
+    5133,
+    4818,
+    4817,
+  ];
+
+  final listId6 = [
+    4566,
+    4531,
+    4530,
+    4529,
+    4460,
   ];
 
   String buildMediaUrl(int mediaId) {
@@ -43,30 +108,72 @@ class FirstPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(),
       body: SafeArea(
-        child: Center(
+        child: SingleChildScrollView(
           child: Column(
             children: [
               TextButton(
-                child: Text("start preload"),
+                child: Text("start predownload and cache"),
                 onPressed: () {
-                  listId.forEach((element) {
-                    preload(
-                      urls: [
-                        buildMediaUrl(element),
-                      ],
-                      shouldPreloadFirstSegment: true,
-                    );
-                  });
+                  VideoPlayerCacheManager.predownloadAndCache(
+                    urls: listId1.map((e) => buildMediaUrl(e)).toList(),
+                    shouldPreloadFirstSegment: true,
+                  );
+                },
+              ),
+              TextButton(
+                child: Text("start predownload and cache 2"),
+                onPressed: () {
+                  VideoPlayerCacheManager.predownloadAndCache(
+                    urls: listId2.map((e) => buildMediaUrl(e)).toList(),
+                    shouldPreloadFirstSegment: true,
+                  );
+                },
+              ),
+              TextButton(
+                child: Text("start predownload and cache 3"),
+                onPressed: () {
+                  VideoPlayerCacheManager.predownloadAndCache(
+                    urls: listId3.map((e) => buildMediaUrl(e)).toList(),
+                    shouldPreloadFirstSegment: true,
+                  );
+                },
+              ),
+              TextButton(
+                child: Text("start predownload and cache 4"),
+                onPressed: () {
+                  VideoPlayerCacheManager.predownloadAndCache(
+                    urls: listId4.map((e) => buildMediaUrl(e)).toList(),
+                    shouldPreloadFirstSegment: true,
+                  );
+                },
+              ),
+              TextButton(
+                child: Text("start predownload and cache 5"),
+                onPressed: () {
+                  VideoPlayerCacheManager.predownloadAndCache(
+                    urls: listId5.map((e) => buildMediaUrl(e)).toList(),
+                    shouldPreloadFirstSegment: true,
+                  );
+                },
+              ),
+              TextButton(
+                child: Text("start predownload and cache 6"),
+                onPressed: () {
+                  VideoPlayerCacheManager.predownloadAndCache(
+                    urls: listId6.map((e) => buildMediaUrl(e)).toList(),
+                    shouldPreloadFirstSegment: true,
+                  );
                 },
               ),
               Wrap(
-                children: listId
+                children: listId1
                     .map(
                       (e) => TextButton(
                         child: Text("Preload $e"),
                         onPressed: () {
-                          preload(
+                          VideoPlayerCacheManager.predownloadAndCache(
                             urls: [
                               buildMediaUrl(e),
                             ],
@@ -78,7 +185,7 @@ class FirstPage extends StatelessWidget {
                     .toList(),
               ),
               Wrap(
-                children: listId
+                children: listId1
                     .map(
                       (e) => TextButton(
                         child: Text("Open $e"),
@@ -149,6 +256,7 @@ class _PlayerPageState extends State<PlayerPage> {
   Widget build(BuildContext context) {
     return SafeArea(
       child: Scaffold(
+        appBar: AppBar(),
         body: SingleChildScrollView(
           child: Column(
             children: <Widget>[

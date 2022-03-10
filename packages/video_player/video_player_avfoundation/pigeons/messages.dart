@@ -93,6 +93,6 @@ abstract class VideoPlayerApi {
   void pause(TextureMessage msg);
   @ObjCSelector('setMixWithOthers:')
   void setMixWithOthers(MixWithOthersMessage msg);
-  @ObjCSelector('preload:')
-  void preload(PreloadMessage msg);
+  @ObjCSelector('predownloadAndCache:')
+  void predownloadAndCache(PreloadMessage msg);
 }

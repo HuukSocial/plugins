@@ -584,7 +584,7 @@ public class Messages {
     void seekTo(PositionMessage msg);
     void pause(TextureMessage msg);
     void setMixWithOthers(MixWithOthersMessage msg);
-    void preload(PreloadMessage msg);
+    void predownloadAndCache(PreloadMessage msg);
 
     /** The codec used by VideoPlayerApi. */
     static MessageCodec<Object> getCodec() {
@@ -854,7 +854,7 @@ public class Messages {
       }
       {
         BasicMessageChannel<Object> channel =
-            new BasicMessageChannel<>(binaryMessenger, "dev.flutter.pigeon.VideoPlayerApi.preload", getCodec());
+            new BasicMessageChannel<>(binaryMessenger, "dev.flutter.pigeon.VideoPlayerApi.predownloadAndCache", getCodec());
         if (api != null) {
           channel.setMessageHandler((message, reply) -> {
             Map<String, Object> wrapped = new HashMap<>();
@@ -864,7 +864,7 @@ public class Messages {
               if (msgArg == null) {
                 throw new NullPointerException("msgArg unexpectedly null.");
               }
-              api.preload(msgArg);
+              api.predownloadAndCache(msgArg);
               wrapped.put("result", null);
             }
             catch (Error | RuntimeException exception) {

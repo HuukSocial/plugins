@@ -6,6 +6,7 @@
 #import <AVFoundation/AVFoundation.h>
 #import <GLKit/GLKit.h>
 #import "messages.g.h"
+#import <video_player_avfoundation/video_player_avfoundation-Swift.h>
 
 #if !__has_feature(objc_arc)
 #error Code Requires ARC.
@@ -45,7 +46,7 @@
 - (instancetype)initWithURL:(NSURL*)url
                frameUpdater:(FLTFrameUpdater*)frameUpdater
                 httpHeaders:(NSDictionary<NSString*, NSString*>*)headers
-           resolutionConfig:(NSDictionary<NSString*, NSDictionary*>*)resolutionConfig;
+           resolutionConfig:(NSDictionary<NSString*, NSNumber*>*)resolutionConfig;
 - (void)play;
 - (void)pause;
 - (void)setIsLooping:(bool)isLooping;
@@ -61,7 +62,10 @@ static void *playbackBufferEmptyContext = &playbackBufferEmptyContext;
 static void *playbackBufferFullContext = &playbackBufferFullContext;
 
 @implementation FLTVideoPlayer
+FLTVideoPlayerCacheManager* _cacheManager;
+
 - (instancetype)initWithAsset:(NSString*)asset frameUpdater:(FLTFrameUpdater*)frameUpdater {
+  _cacheManager = [FLTVideoPlayerCacheManager sharedInstance];
   NSString* path = [[NSBundle mainBundle] pathForResource:asset ofType:nil];
   return [self initWithURL:[NSURL fileURLWithPath:path] frameUpdater:frameUpdater httpHeaders:nil resolutionConfig:nil];
 }
@@ -184,14 +188,14 @@ NS_INLINE CGFloat radiansToDegrees(CGFloat radians) {
 - (instancetype)initWithURL:(NSURL*)url
                frameUpdater:(FLTFrameUpdater*)frameUpdater
                 httpHeaders:(NSDictionary<NSString*, NSString*>*)headers
-           resolutionConfig:(NSDictionary<NSString*, NSDictionary*>*)resolutionConfig {
+           resolutionConfig:(NSDictionary<NSString *, NSNumber *>*)resolutionConfig {
   NSDictionary<NSString*, id>* options = nil;
   if (headers != nil && [headers count] != 0) {
     options = @{@"AVURLAssetHTTPHeaderFieldsKey" : headers};
   }
-  AVURLAsset* urlAsset = [AVURLAsset URLAssetWithURL:url options:options];
+  NSURL* reverseProxyURL = [_cacheManager reverseProxyURLFrom:url];
+  AVURLAsset* urlAsset = [AVURLAsset URLAssetWithURL:reverseProxyURL options:options];
   AVPlayerItem* item = [AVPlayerItem playerItemWithAsset:urlAsset];
-
   if (resolutionConfig) {
     NSNumber *maxWidth = resolutionConfig[@"maxWidth"];
     NSNumber *maxHeight = resolutionConfig[@"maxHeight"];
@@ -526,10 +530,13 @@ NS_INLINE CGFloat radiansToDegrees(CGFloat radians) {
 @end
 
 @implementation FLTVideoPlayerPlugin
+FLTVideoPlayerCacheManager* _cacheManager;
+
 + (void)registerWithRegistrar:(NSObject<FlutterPluginRegistrar> *)registrar {
   FLTVideoPlayerPlugin *instance = [[FLTVideoPlayerPlugin alloc] initWithRegistrar:registrar];
   [registrar publish:instance];
   FLTVideoPlayerApiSetup(registrar.messenger, instance);
+  _cacheManager = [FLTVideoPlayerCacheManager sharedInstance];
 }
 
 - (instancetype)initWithRegistrar:(NSObject<FlutterPluginRegistrar> *)registrar {
@@ -670,6 +677,10 @@ NS_INLINE CGFloat radiansToDegrees(CGFloat radians) {
   } else {
     [[AVAudioSession sharedInstance] setCategory:AVAudioSessionCategoryPlayback error:nil];
   }
+}
+
+- (void)predownloadAndCache:(nonnull FLTPreloadMessage *)msg error:(FlutterError * _Nullable __autoreleasing * _Nonnull)error {
+  [_cacheManager predownloadAndCacheWithUrls: msg.urls shouldPreloadFirstSegment: msg.shouldPreloadFirstSegment];
 }
 
 @end

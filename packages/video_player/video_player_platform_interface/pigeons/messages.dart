@@ -72,7 +72,7 @@ abstract class VideoPlayerApi {
 
   void setMixWithOthers(MixWithOthersMessage msg);
 
-  void preload(PreloadMessage msg);
+  void predownloadAndCache(PreloadMessage msg);
 }
 
 void configurePigeon(PigeonOptions opts) {

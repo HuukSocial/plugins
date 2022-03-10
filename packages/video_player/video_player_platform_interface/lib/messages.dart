@@ -418,10 +418,10 @@ class VideoPlayerApi {
     }
   }
 
-  Future<void> preload(PreloadMessage arg) async {
+  Future<void> predownloadAndCache(PreloadMessage arg) async {
     final Object encoded = arg.encode();
     const BasicMessageChannel<Object?> channel =
-        BasicMessageChannel<Object?>('dev.flutter.pigeon.VideoPlayerApi.preload', StandardMessageCodec());
+        BasicMessageChannel<Object?>('dev.flutter.pigeon.VideoPlayerApi.predownloadAndCache', StandardMessageCodec());
     final Map<Object?, Object?>? replyMap = await channel.send(encoded) as Map<Object?, Object?>?;
     if (replyMap == null) {
       throw PlatformException(

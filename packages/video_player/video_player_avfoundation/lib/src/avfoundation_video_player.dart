@@ -38,7 +38,7 @@ class AVFoundationVideoPlayer extends VideoPlayerPlatform {
     String? uri;
     String? formatHint;
     Map<String, String> httpHeaders = <String, String>{};
-    Map<String, double> resolutionConfig = dataSource.resolutionConfig;
+    final Map<String, double> resolutionConfig = dataSource.resolutionConfig;
     switch (dataSource.sourceType) {
       case DataSourceType.asset:
         asset = dataSource.asset;
@@ -167,11 +167,11 @@ class AVFoundationVideoPlayer extends VideoPlayerPlatform {
   }
 
   @override
-  Future<void> preload(
+  Future<void> predownloadAndCache(
     List<String> urls,
     bool shouldPreloadFirstSegment,
   ) {
-    return _api.preload(
+    return _api.predownloadAndCache(
       PreloadMessage(
         urls: urls,
         shouldPreloadFirstSegment: shouldPreloadFirstSegment,

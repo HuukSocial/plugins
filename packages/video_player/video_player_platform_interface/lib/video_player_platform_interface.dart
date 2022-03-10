@@ -104,12 +104,12 @@ abstract class VideoPlayerPlatform extends PlatformInterface {
     throw UnimplementedError('setMixWithOthers() has not been implemented.');
   }
 
-  /// preload
-  Future<void> preload(
+  /// predownloadAndCache
+  Future<void> predownloadAndCache(
     List<String> urls,
     bool shouldPreloadFirstSegment,
   ) {
-    throw UnimplementedError('preload() has not been implemented.');
+    throw UnimplementedError('predownloadAndCache() has not been implemented.');
   }
 }
 

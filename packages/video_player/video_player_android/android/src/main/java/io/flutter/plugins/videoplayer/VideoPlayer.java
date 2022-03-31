@@ -96,8 +96,6 @@ final class VideoPlayer {
         final int maxWidth = (int) Double.parseDouble(resolution.get("maxWidth").toString());
         final int maxHeight = (int) Double.parseDouble(resolution.get("maxHeight").toString());
 
-        final boolean shouldCacheWhilePlaying = maxHeight == size480MaxWidth || maxWidth == size480MaxWidth;
-
         Uri uri = Uri.parse(dataSource);
 
         DataSource.Factory dataSourceFactory;
@@ -120,7 +118,7 @@ final class VideoPlayer {
                 .Builder(context)
                 .setTrackSelector(trackSelector)
                 .build();
-        MediaSource mediaSource = buildMediaSource(uri, dataSourceFactory, formatHint, context, shouldCacheWhilePlaying);
+        MediaSource mediaSource = buildMediaSource(uri, dataSourceFactory, formatHint, context);
         exoPlayer.setMediaSource(mediaSource);
         exoPlayer.prepare();
 
@@ -136,7 +134,8 @@ final class VideoPlayer {
     }
 
     private MediaSource buildMediaSource(
-            Uri uri, DataSource.Factory mediaDataSourceFactory, String formatHint, Context context, boolean shouldCacheWhilePlaying) {
+            Uri uri, DataSource.Factory mediaDataSourceFactory, String formatHint, Context context) {
+        final CacheDataSource.Factory cacheDatasourceFactory = getWriteableCacheDataSourceFactory(context);
         int type;
         if (formatHint == null) {
             type = Util.inferContentType(uri.getLastPathSegment());
@@ -171,13 +170,6 @@ final class VideoPlayer {
                         new DefaultDataSourceFactory(context, null, mediaDataSourceFactory))
                         .createMediaSource(MediaItem.fromUri(uri));
             case C.TYPE_HLS:
-                CacheDataSource.Factory cacheDatasourceFactory;
-                if (shouldCacheWhilePlaying) {
-                    cacheDatasourceFactory = getWriteableCacheDataSourceFactory(context);
-                } else {
-                    cacheDatasourceFactory = getReadOnlyCacheDataSourceFactory(context);
-                }
-
                 return new HlsMediaSource.Factory(cacheDatasourceFactory)
                         .setAllowChunklessPreparation(true)
                         .createMediaSource(
@@ -188,8 +180,12 @@ final class VideoPlayer {
                                         .build()
                         );
             case C.TYPE_OTHER:
-                return new ProgressiveMediaSource.Factory(mediaDataSourceFactory)
-                        .createMediaSource(MediaItem.fromUri(uri));
+                return new ProgressiveMediaSource.Factory(cacheDatasourceFactory)
+                        .createMediaSource(new MediaItem.Builder()
+                                .setUri(uri)
+                                .setMediaId(uri.toString())
+                                .setCustomCacheKey(uri.toString())
+                                .build());
             default: {
                 throw new IllegalStateException("Unsupported type: " + type);
             }
@@ -395,14 +391,6 @@ final class VideoPlayer {
                 .setCache(getCache(context))
                 .setFlags(CacheDataSource.FLAG_IGNORE_CACHE_ON_ERROR)
                 .setUpstreamDataSourceFactory(getHttpDataSourceFactory());
-    }
-
-    public static CacheDataSource.Factory getReadOnlyCacheDataSourceFactory(Context context) {
-        return new CacheDataSource.Factory()
-                .setCache(getCache(context))
-                .setUpstreamDataSourceFactory(getHttpDataSourceFactory())
-                .setFlags(CacheDataSource.FLAG_IGNORE_CACHE_ON_ERROR)
-                .setCacheWriteDataSinkFactory(null);
     }
 
     private static HttpDataSource.Factory getHttpDataSourceFactory() {

@@ -10,10 +10,14 @@ import android.os.Build;
 import android.util.LongSparseArray;
 
 import com.google.android.exoplayer2.MediaItem;
+import com.google.android.exoplayer2.upstream.DataSpec;
+import com.google.android.exoplayer2.upstream.cache.CacheDataSource;
+import com.google.android.exoplayer2.upstream.cache.CacheWriter;
 
 import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
@@ -36,19 +40,12 @@ import io.flutter.plugins.videoplayer.Messages.VideoPlayerApi;
 import io.flutter.plugins.videoplayer.Messages.VolumeMessage;
 import io.flutter.view.TextureRegistry;
 
-import java.security.KeyManagementException;
-import java.security.NoSuchAlgorithmException;
-import java.util.Map;
-
-import javax.net.ssl.HttpsURLConnection;
-
-import java.util.HashMap;
-
 /**
  * Android platform implementation of the VideoPlayerPlugin.
  */
 public class VideoPlayerPlugin implements FlutterPlugin, VideoPlayerApi {
     private static final String TAG = "VideoPlayerPlugin";
+    private static final int MP4_PRELOAD_LENGTH = 3 * 1024 * 1024; // 3MB
     private final LongSparseArray<VideoPlayer> videoPlayers = new LongSparseArray<>();
     private final VideoPlayerOptions options = new VideoPlayerOptions();
     private FlutterState flutterState;
@@ -255,24 +252,48 @@ public class VideoPlayerPlugin implements FlutterPlugin, VideoPlayerApi {
             preloadMediaUrls.add(url);
             // call executor to start preload
             preloadExecutorService.execute(() -> {
-                Log.d(TAG, "Start Preload: " + url);
-                CustomHlsDownloader hlsDownloader =
-                        new CustomHlsDownloader(
-                                new MediaItem.Builder()
-                                        .setUri(Uri.parse(url))
-                                        .setMediaId(url)
-                                        .setCustomCacheKey(url)
-                                        .build(),
-                                VideoPlayer.getWriteableCacheDataSourceFactory(flutterState.applicationContext),
-                                msg.getShouldPreloadFirstSegment());
-                try {
-                    hlsDownloader.download((contentLength, bytesDownloaded, percentDownloaded) -> {
-                    });
-                } catch (Exception e) {
-                    Log.e(TAG, e.toString());
-                    preloadMediaUrls.remove(url);
+                if (url.endsWith("m3u8")) {
+                    // hls
+                    predownloadAndCacheHls(url, msg.getShouldPreloadFirstSegment());
+                } else if (url.endsWith("mp4")) {
+                    // mp4
+                    predownloadAndCacheMp4(url);
                 }
             });
+        }
+    }
+
+    private void predownloadAndCacheHls(String url, boolean shouldPreloadFirstSegment) {
+        Log.d(TAG, "Start Preload HLS: " + url);
+        CustomHlsDownloader hlsDownloader =
+                new CustomHlsDownloader(
+                        new MediaItem.Builder()
+                                .setUri(Uri.parse(url))
+                                .setMediaId(url)
+                                .setCustomCacheKey(url)
+                                .build(),
+                        VideoPlayer.getWriteableCacheDataSourceFactory(flutterState.applicationContext),
+                        shouldPreloadFirstSegment);
+        try {
+            hlsDownloader.download((contentLength, bytesDownloaded, percentDownloaded) -> {
+            });
+        } catch (Exception e) {
+            Log.e(TAG, e.toString());
+            preloadMediaUrls.remove(url);
+        }
+    }
+
+    private void predownloadAndCacheMp4(String url) {
+        Log.d(TAG, "Start Preload MP4: " + url);
+        final Uri uri = Uri.parse(url);
+        final CacheDataSource dataSource = VideoPlayer.getWriteableCacheDataSourceFactory(flutterState.applicationContext).createDataSource();
+        final DataSpec dataSpec = new DataSpec(uri, 0, MP4_PRELOAD_LENGTH);
+        try {
+            new CacheWriter(dataSource, dataSpec, null, (requestLength, bytesCached, newBytesCached) -> {
+            }).cache();
+        } catch (Exception e) {
+            Log.e(TAG, e.toString());
+            preloadMediaUrls.remove(url);
         }
     }
 

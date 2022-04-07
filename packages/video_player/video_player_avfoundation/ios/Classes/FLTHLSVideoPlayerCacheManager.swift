@@ -30,6 +30,7 @@ class FLTHLSVideoPlayerCacheManager: NSObject {
   var pendingSegmentReverseProxyURLs = [URL]()
   
   let reverseProxyURLsQueue = DispatchQueue(label: "com.huuk.social.reverseProxyURLs", attributes: .concurrent)
+  let urlSession = URLSession(configuration: .default)
   
   public override init() {
     super.init()
@@ -71,7 +72,7 @@ class FLTHLSVideoPlayerCacheManager: NSObject {
 //            print("cuong: Manifest " + String(self.pendingManifestReverseProxyURLs.count))
             self.fetchingManifestReverseProxyURLsCount += 1
             let url = pendingManifestReverseProxyURLs[index]
-            let task = URLSession.shared.dataTask(with: url) { data, response, error in
+            let task = self.urlSession.dataTask(with: url) { data, response, error in
               self.fetchManifestReverseProxyURL(url)
             }
             task.resume()
@@ -101,7 +102,7 @@ class FLTHLSVideoPlayerCacheManager: NSObject {
 //              print("cuong: Segment " + String(self.pendingSegmentReverseProxyURLs.count))
               self.fetchingSegmentReverseProxyURLsCount += 1
               let url = pendingSegmentReverseProxyURLs[index]
-              let task = URLSession.shared.dataTask(with: url) { data, response, error in
+              let task = self.urlSession.dataTask(with: url) { data, response, error in
                 self.fetchSegmentReverseProxyURL(url)
               }
               task.resume()
@@ -132,7 +133,7 @@ class FLTHLSVideoPlayerCacheManager: NSObject {
   }
   
   func fetchManifestReverseProxyURL(_ url: URL) {
-    let task = URLSession.shared.dataTask(with: url) { data, response, error in
+    let task = urlSession.dataTask(with: url) { data, response, error in
       self.reverseProxyURLsQueue.async(flags: .barrier, execute: { [weak self] in
         guard let self = self else { return }
 //        print("cuong: Manifest " + String(self.pendingManifestReverseProxyURLs.count))
@@ -148,7 +149,7 @@ class FLTHLSVideoPlayerCacheManager: NSObject {
   }
   
   func fetchSegmentReverseProxyURL(_ url: URL) {
-    let task = URLSession.shared.dataTask(with: url) { data, response, error in
+    let task = urlSession.dataTask(with: url) { data, response, error in
       self.reverseProxyURLsQueue.async(flags: .barrier, execute: { [weak self] in
         guard let self = self else { return }
 //        print("cuong: Segment " + String(self.pendingSegmentReverseProxyURLs.count))

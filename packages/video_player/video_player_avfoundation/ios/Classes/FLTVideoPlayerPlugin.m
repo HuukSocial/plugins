@@ -193,8 +193,13 @@ NS_INLINE CGFloat radiansToDegrees(CGFloat radians) {
   if (headers != nil && [headers count] != 0) {
     options = @{@"AVURLAssetHTTPHeaderFieldsKey" : headers};
   }
-  NSURL* reverseProxyURL = [_cacheManager reverseProxyURLFrom:url];
-  AVURLAsset* urlAsset = [AVURLAsset URLAssetWithURL:reverseProxyURL options:options];
+  AVURLAsset* urlAsset;
+  if ([[url.pathExtension lowercaseString] isEqual: @"m3u8"]) {
+    NSURL* reverseProxyURL = [_cacheManager reverseProxyURLFrom:url];
+    urlAsset = [AVURLAsset URLAssetWithURL:reverseProxyURL options:options];
+  } else {
+    urlAsset = [FLTCachingAVURLAsset createWithUrl:url];
+  }
   AVPlayerItem* item = [AVPlayerItem playerItemWithAsset:urlAsset];
   if (resolutionConfig) {
     NSNumber *maxWidth = resolutionConfig[@"maxWidth"];

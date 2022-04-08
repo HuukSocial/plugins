@@ -138,22 +138,22 @@ class FLTResourceLoaderRequest: NSObject, URLSessionDataDelegate {
         if let offset = self.requestRange?.start, self.downloadedData.count > 0 {
           
           let saveResult = self.assetDataManager?.saveDownloadedData(self.downloadedData, offset: Int(offset))
-          if saveResult == false {
+          if let delegate = delegate, saveResult == false {
             let pendingReceviveDataModel = FLTPendingReceviveDataModel(offset: Int(offset), data: self.downloadedData)
-            delegate!.pendingReceviveDataModels.append(pendingReceviveDataModel)
-            delegate!.pendingReceviveDataModels.sort { first, second in
+            delegate.pendingReceviveDataModels.append(pendingReceviveDataModel)
+            delegate.pendingReceviveDataModels.sort { first, second in
               return first.offset < second.offset
             }
 //            print("cuongne----")
-            delegate!.pendingReceviveDataModels.forEach { model in
+            delegate.pendingReceviveDataModels.forEach { model in
 //              print("cuongne---- \(model.offset)  \(model.data.count)")
             }
-//            print(delegate!.pendingReceviveDataModels)
+//            print(delegate.pendingReceviveDataModels)
 //            print("cuongne----")
             
-            if delegate!.pendingReceviveDataModels.count > 1 {
+            if delegate.pendingReceviveDataModels.count > 1 {
               var resolvedPendingReceviveDataModels = [FLTPendingReceviveDataModel]()
-              for model in delegate!.pendingReceviveDataModels {
+              for model in delegate.pendingReceviveDataModels {
                 let result = self.assetDataManager?.saveDownloadedData(model.data, offset: model.offset)
                 if result == true {
                   resolvedPendingReceviveDataModels.append(model)
@@ -161,8 +161,8 @@ class FLTResourceLoaderRequest: NSObject, URLSessionDataDelegate {
               }
               
               resolvedPendingReceviveDataModels.forEach { model in
-                if let index = delegate!.pendingReceviveDataModels.firstIndex(of: model) {
-                  delegate!.pendingReceviveDataModels.remove(at: index)
+                if let index = delegate.pendingReceviveDataModels.firstIndex(of: model) {
+                  delegate.pendingReceviveDataModels.remove(at: index)
                 }
               }
               

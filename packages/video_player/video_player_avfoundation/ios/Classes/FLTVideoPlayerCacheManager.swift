@@ -48,7 +48,7 @@ import PINCache
       }
     }
     if hlsURLs.isEmpty == false {
-      hlsVideoPlayerCacheManager.predownloadAndCacheURls(urls, shouldPreloadFirstSegment: shouldPreloadFirstSegment)
+      hlsVideoPlayerCacheManager.predownloadAndCacheURls(hlsURLs, shouldPreloadFirstSegment: shouldPreloadFirstSegment)
     }
     if otherURLs.isEmpty == false {
       otherVideoPlayerCacheManager.predownloadAndCacheURls(otherURLs)

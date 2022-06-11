@@ -265,16 +265,16 @@ public class VideoPlayerPlugin implements FlutterPlugin, VideoPlayerApi {
 
     private void predownloadAndCacheHls(String url, boolean shouldPreloadFirstSegment) {
         Log.d(TAG, "Start Preload HLS: " + url);
-        CustomHlsDownloader hlsDownloader =
-                new CustomHlsDownloader(
-                        new MediaItem.Builder()
-                                .setUri(Uri.parse(url))
-                                .setMediaId(url)
-                                .setCustomCacheKey(url)
-                                .build(),
-                        VideoPlayer.getWriteableCacheDataSourceFactory(flutterState.applicationContext),
-                        shouldPreloadFirstSegment);
         try {
+            CustomHlsDownloader hlsDownloader =
+                    new CustomHlsDownloader(
+                            new MediaItem.Builder()
+                                    .setUri(Uri.parse(url))
+                                    .setMediaId(url)
+                                    .setCustomCacheKey(url)
+                                    .build(),
+                            VideoPlayer.getWriteableCacheDataSourceFactory(flutterState.applicationContext),
+                            shouldPreloadFirstSegment);
             hlsDownloader.download((contentLength, bytesDownloaded, percentDownloaded) -> {
             });
         } catch (Exception e) {
@@ -285,10 +285,10 @@ public class VideoPlayerPlugin implements FlutterPlugin, VideoPlayerApi {
 
     private void predownloadAndCacheMp4(String url) {
         Log.d(TAG, "Start Preload MP4: " + url);
-        final Uri uri = Uri.parse(url);
-        final CacheDataSource dataSource = VideoPlayer.getWriteableCacheDataSourceFactory(flutterState.applicationContext).createDataSource();
-        final DataSpec dataSpec = new DataSpec(uri, 0, MP4_PRELOAD_LENGTH);
         try {
+            final Uri uri = Uri.parse(url);
+            final CacheDataSource dataSource = VideoPlayer.getWriteableCacheDataSourceFactory(flutterState.applicationContext).createDataSource();
+            final DataSpec dataSpec = new DataSpec(uri, 0, MP4_PRELOAD_LENGTH);
             new CacheWriter(dataSource, dataSpec, null, (requestLength, bytesCached, newBytesCached) -> {
             }).cache();
         } catch (Exception e) {

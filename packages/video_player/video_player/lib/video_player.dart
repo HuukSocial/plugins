@@ -32,8 +32,16 @@ VideoPlayerPlatform get _videoPlayerPlatform {
 /// VideoPlayerCacheManager
 class VideoPlayerCacheManager {
   /// preload a network url
-  static void predownloadAndCache({required List<String> urls, bool shouldPreloadFirstSegment = true}) {
-    _videoPlayerPlatform.predownloadAndCache(urls, shouldPreloadFirstSegment);
+  static void predownloadAndCache({
+    required List<String> urls,
+    bool shouldPreloadFirstSegment = true,
+    Map<String, String>? headers,
+  }) {
+    _videoPlayerPlatform.predownloadAndCache(
+      urls,
+      shouldPreloadFirstSegment,
+      headers ?? <String, String>{},
+    );
   }
 }
 

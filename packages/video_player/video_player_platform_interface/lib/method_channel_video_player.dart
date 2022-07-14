@@ -153,11 +153,13 @@ class MethodChannelVideoPlayer extends VideoPlayerPlatform {
   Future<void> predownloadAndCache(
     List<String> urls,
     bool shouldPreloadFirstSegment,
+    Map<String, String> headers,
   ) async {
     return _api.predownloadAndCache(
       PreloadMessage()
         ..urls = urls
-        ..shouldPreloadFirstSegment = shouldPreloadFirstSegment,
+        ..shouldPreloadFirstSegment = shouldPreloadFirstSegment
+        ..headers = headers,
     );
   }
 

@@ -16,29 +16,34 @@ import 'package:pigeon/pigeon.dart';
 ))
 class TextureMessage {
   TextureMessage(this.textureId);
+
   int textureId;
 }
 
 class LoopingMessage {
   LoopingMessage(this.textureId, this.isLooping);
+
   int textureId;
   bool isLooping;
 }
 
 class VolumeMessage {
   VolumeMessage(this.textureId, this.volume);
+
   int textureId;
   double volume;
 }
 
 class PlaybackSpeedMessage {
   PlaybackSpeedMessage(this.textureId, this.speed);
+
   int textureId;
   double speed;
 }
 
 class PositionMessage {
   PositionMessage(this.textureId, this.position);
+
   int textureId;
   int position;
 }
@@ -59,40 +64,57 @@ class CreateMessage {
 
 class MixWithOthersMessage {
   MixWithOthersMessage(this.mixWithOthers);
+
   bool mixWithOthers;
 }
 
 class PreloadMessage {
-  PreloadMessage(this.urls, this.shouldPreloadFirstSegment);
+  PreloadMessage({
+    required this.urls,
+    required this.shouldPreloadFirstSegment,
+    required this.headers,
+  });
 
   List<String?> urls;
   bool shouldPreloadFirstSegment;
+  Map<String?, String?> headers;
 }
 
 @HostApi(dartHostTestHandler: 'TestHostVideoPlayerApi')
 abstract class VideoPlayerApi {
   @ObjCSelector('initialize')
   void initialize();
+
   @ObjCSelector('create:')
   TextureMessage create(CreateMessage msg);
+
   @ObjCSelector('dispose:')
   void dispose(TextureMessage msg);
+
   @ObjCSelector('setLooping:')
   void setLooping(LoopingMessage msg);
+
   @ObjCSelector('setVolume:')
   void setVolume(VolumeMessage msg);
+
   @ObjCSelector('setPlaybackSpeed:')
   void setPlaybackSpeed(PlaybackSpeedMessage msg);
+
   @ObjCSelector('play:')
   void play(TextureMessage msg);
+
   @ObjCSelector('position:')
   PositionMessage position(TextureMessage msg);
+
   @ObjCSelector('seekTo:')
   void seekTo(PositionMessage msg);
+
   @ObjCSelector('pause:')
   void pause(TextureMessage msg);
+
   @ObjCSelector('setMixWithOthers:')
   void setMixWithOthers(MixWithOthersMessage msg);
+
   @ObjCSelector('predownloadAndCache:')
   void predownloadAndCache(PreloadMessage msg);
 }

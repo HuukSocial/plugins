@@ -108,6 +108,7 @@ abstract class VideoPlayerPlatform extends PlatformInterface {
   Future<void> predownloadAndCache(
     List<String> urls,
     bool shouldPreloadFirstSegment,
+    Map<String, String> headers,
   ) {
     throw UnimplementedError('predownloadAndCache() has not been implemented.');
   }

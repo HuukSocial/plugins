@@ -461,6 +461,15 @@ public class Messages {
       this.shouldPreloadFirstSegment = setterArg;
     }
 
+    private @NonNull Map<String, String> headers;
+    public @NonNull Map<String, String> getHeaders() { return headers; }
+    public void setHeaders(@NonNull Map<String, String> setterArg) {
+      if (setterArg == null) {
+        throw new IllegalStateException("Nonnull field \"headers\" is null.");
+      }
+      this.headers = setterArg;
+    }
+
     /** Constructor is private to enforce null safety; use Builder. */
     private PreloadMessage() {}
     public static class Builder {
@@ -474,10 +483,16 @@ public class Messages {
         this.shouldPreloadFirstSegment = setterArg;
         return this;
       }
+      private @Nullable Map<String, String> headers;
+      public @NonNull Builder setHeaders(@NonNull Map<String, String> setterArg) {
+        this.headers = setterArg;
+        return this;
+      }
       public @NonNull PreloadMessage build() {
         PreloadMessage pigeonReturn = new PreloadMessage();
         pigeonReturn.setUrls(urls);
         pigeonReturn.setShouldPreloadFirstSegment(shouldPreloadFirstSegment);
+        pigeonReturn.setHeaders(headers);
         return pigeonReturn;
       }
     }
@@ -485,6 +500,7 @@ public class Messages {
       Map<String, Object> toMapResult = new HashMap<>();
       toMapResult.put("urls", urls);
       toMapResult.put("shouldPreloadFirstSegment", shouldPreloadFirstSegment);
+      toMapResult.put("headers", headers);
       return toMapResult;
     }
     static @NonNull PreloadMessage fromMap(@NonNull Map<String, Object> map) {
@@ -493,6 +509,8 @@ public class Messages {
       pigeonResult.setUrls((List<String>)urls);
       Object shouldPreloadFirstSegment = map.get("shouldPreloadFirstSegment");
       pigeonResult.setShouldPreloadFirstSegment((Boolean)shouldPreloadFirstSegment);
+      Object headers = map.get("headers");
+      pigeonResult.setHeaders((Map<String, String>)headers);
       return pigeonResult;
     }
   }

@@ -254,17 +254,17 @@ public class VideoPlayerPlugin implements FlutterPlugin, VideoPlayerApi {
             preloadExecutorService.execute(() -> {
                 if (url.endsWith("m3u8")) {
                     // hls
-                    predownloadAndCacheHls(url, msg.getShouldPreloadFirstSegment());
+                    predownloadAndCacheHls(url, msg.getShouldPreloadFirstSegment(), msg.getHeaders());
                 } else if (url.endsWith("mp4")) {
                     // mp4
-                    predownloadAndCacheMp4(url);
+                    predownloadAndCacheMp4(url, msg.getHeaders());
                 }
             });
         }
     }
 
-    private void predownloadAndCacheHls(String url, boolean shouldPreloadFirstSegment) {
-        Log.d(TAG, "Start Preload HLS: " + url);
+    private void predownloadAndCacheHls(String url, boolean shouldPreloadFirstSegment, Map<String, String> httpHeaders) {
+        Log.d(TAG, "Start Preload HLS: " + url + " with headers: " + httpHeaders.toString());
         try {
             CustomHlsDownloader hlsDownloader =
                     new CustomHlsDownloader(
@@ -273,7 +273,7 @@ public class VideoPlayerPlugin implements FlutterPlugin, VideoPlayerApi {
                                     .setMediaId(url)
                                     .setCustomCacheKey(url)
                                     .build(),
-                            VideoPlayer.getWriteableCacheDataSourceFactory(flutterState.applicationContext),
+                            VideoPlayer.getWriteableCacheDataSourceFactory(flutterState.applicationContext, httpHeaders),
                             shouldPreloadFirstSegment);
             hlsDownloader.download((contentLength, bytesDownloaded, percentDownloaded) -> {
             });
@@ -283,11 +283,13 @@ public class VideoPlayerPlugin implements FlutterPlugin, VideoPlayerApi {
         }
     }
 
-    private void predownloadAndCacheMp4(String url) {
-        Log.d(TAG, "Start Preload MP4: " + url);
+    private void predownloadAndCacheMp4(String url, Map<String, String> httpHeaders) {
+        Log.d(TAG, "Start Preload MP4: " + url + " with headers: " + httpHeaders.toString());
         try {
             final Uri uri = Uri.parse(url);
-            final CacheDataSource dataSource = VideoPlayer.getWriteableCacheDataSourceFactory(flutterState.applicationContext).createDataSource();
+            final CacheDataSource dataSource = VideoPlayer
+                    .getWriteableCacheDataSourceFactory(flutterState.applicationContext, httpHeaders)
+                    .createDataSource();
             final DataSpec dataSpec = new DataSpec(uri, 0, MP4_PRELOAD_LENGTH);
             new CacheWriter(dataSource, dataSpec, null, (requestLength, bytesCached, newBytesCached) -> {
             }).cache();

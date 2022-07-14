@@ -33,7 +33,6 @@ import com.google.android.exoplayer2.source.smoothstreaming.DefaultSsChunkSource
 import com.google.android.exoplayer2.source.smoothstreaming.SsMediaSource;
 import com.google.android.exoplayer2.trackselection.AdaptiveTrackSelection;
 import com.google.android.exoplayer2.trackselection.DefaultTrackSelector;
-import com.google.android.exoplayer2.upstream.DataSource;
 import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory;
 import com.google.android.exoplayer2.upstream.DefaultHttpDataSource;
 import com.google.android.exoplayer2.upstream.HttpDataSource;
@@ -50,6 +49,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import io.flutter.Log;
 import io.flutter.plugin.common.EventChannel;
 import io.flutter.view.TextureRegistry;
 
@@ -76,7 +76,6 @@ final class VideoPlayer {
 
     private final VideoPlayerOptions options;
 
-    private static final int size480MaxWidth = 854;
     private static Cache cache;
     private static DatabaseProvider databaseProvider;
 
@@ -97,45 +96,19 @@ final class VideoPlayer {
         final int maxHeight = (int) Double.parseDouble(resolution.get("maxHeight").toString());
 
         Uri uri = Uri.parse(dataSource);
-
-        DataSource.Factory dataSourceFactory;
-        if (isHTTP(uri)) {
-            DefaultHttpDataSource.Factory httpDataSourceFactory =
-                    new DefaultHttpDataSource.Factory()
-                            .setUserAgent("ExoPlayer")
-                            .setAllowCrossProtocolRedirects(true);
-
-            if (httpHeaders != null && !httpHeaders.isEmpty()) {
-                httpDataSourceFactory.setDefaultRequestProperties(httpHeaders);
-            }
-            dataSourceFactory = httpDataSourceFactory;
-        } else {
-            dataSourceFactory = new DefaultDataSourceFactory(context, "ExoPlayer");
-        }
-
         DefaultTrackSelector trackSelector = buildTrackSelector(uri, formatHint, context, maxWidth, maxHeight);
         exoPlayer = new SimpleExoPlayer
                 .Builder(context)
                 .setTrackSelector(trackSelector)
                 .build();
-        MediaSource mediaSource = buildMediaSource(uri, dataSourceFactory, formatHint, context);
+        MediaSource mediaSource = buildMediaSource(uri, formatHint, context, httpHeaders);
         exoPlayer.setMediaSource(mediaSource);
         exoPlayer.prepare();
-
         setupVideoPlayer(eventChannel, textureEntry);
     }
 
-    private static boolean isHTTP(Uri uri) {
-        if (uri == null || uri.getScheme() == null) {
-            return false;
-        }
-        String scheme = uri.getScheme();
-        return scheme.equals("http") || scheme.equals("https");
-    }
-
-    private MediaSource buildMediaSource(
-            Uri uri, DataSource.Factory mediaDataSourceFactory, String formatHint, Context context) {
-        final CacheDataSource.Factory cacheDatasourceFactory = getWriteableCacheDataSourceFactory(context);
+    private MediaSource buildMediaSource(Uri uri, String formatHint, Context context, Map<String, String> httpHeaders) {
+        final CacheDataSource.Factory cacheDatasourceFactory = getWriteableCacheDataSourceFactory(context, httpHeaders);
         int type;
         if (formatHint == null) {
             type = Util.inferContentType(uri.getLastPathSegment());
@@ -161,13 +134,13 @@ final class VideoPlayer {
         switch (type) {
             case C.TYPE_SS:
                 return new SsMediaSource.Factory(
-                        new DefaultSsChunkSource.Factory(mediaDataSourceFactory),
-                        new DefaultDataSourceFactory(context, null, mediaDataSourceFactory))
+                        new DefaultSsChunkSource.Factory(cacheDatasourceFactory),
+                        new DefaultDataSourceFactory(context, null, cacheDatasourceFactory))
                         .createMediaSource(MediaItem.fromUri(uri));
             case C.TYPE_DASH:
                 return new DashMediaSource.Factory(
-                        new DefaultDashChunkSource.Factory(mediaDataSourceFactory),
-                        new DefaultDataSourceFactory(context, null, mediaDataSourceFactory))
+                        new DefaultDashChunkSource.Factory(cacheDatasourceFactory),
+                        new DefaultDataSourceFactory(context, null, cacheDatasourceFactory))
                         .createMediaSource(MediaItem.fromUri(uri));
             case C.TYPE_HLS:
                 return new HlsMediaSource.Factory(cacheDatasourceFactory)
@@ -386,15 +359,17 @@ final class VideoPlayer {
         }
     }
 
-    public static CacheDataSource.Factory getWriteableCacheDataSourceFactory(Context context) {
+    public static CacheDataSource.Factory getWriteableCacheDataSourceFactory(Context context, Map<String, String> httpHeaders) {
         return new CacheDataSource.Factory()
                 .setCache(getCache(context))
                 .setFlags(CacheDataSource.FLAG_IGNORE_CACHE_ON_ERROR)
-                .setUpstreamDataSourceFactory(getHttpDataSourceFactory());
+                .setUpstreamDataSourceFactory(getHttpDataSourceFactory(httpHeaders));
     }
 
-    private static HttpDataSource.Factory getHttpDataSourceFactory() {
-        return new DefaultHttpDataSource.Factory();
+    private static HttpDataSource.Factory getHttpDataSourceFactory(Map<String, String> httpHeaders) {
+        return new DefaultHttpDataSource
+                .Factory()
+                .setDefaultRequestProperties(httpHeaders);
     }
 
     private static synchronized Cache getCache(Context context) {

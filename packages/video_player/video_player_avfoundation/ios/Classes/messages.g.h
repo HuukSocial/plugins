@@ -92,10 +92,10 @@ NS_ASSUME_NONNULL_BEGIN
 - (instancetype)init NS_UNAVAILABLE;
 + (instancetype)makeWithUrls:(NSArray<NSString *> *)urls
     shouldPreloadFirstSegment:(NSNumber *)shouldPreloadFirstSegment
-    headers:(NSDictionary<NSString *, NSString *> *)headers;
+    headers:(NSArray<NSDictionary<NSString *, NSString *> *> *)headers;
 @property(nonatomic, strong) NSArray<NSString *> * urls;
 @property(nonatomic, strong) NSNumber * shouldPreloadFirstSegment;
-@property(nonatomic, strong) NSDictionary<NSString *, NSString *> * headers;
+@property(nonatomic, strong) NSArray<NSDictionary<NSString *, NSString *> *> * headers;
 @end
 
 /// The codec used by FLTVideoPlayerApi.

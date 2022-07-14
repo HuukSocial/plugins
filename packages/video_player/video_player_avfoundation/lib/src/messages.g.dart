@@ -203,7 +203,7 @@ class PreloadMessage {
 
   List<String?> urls;
   bool shouldPreloadFirstSegment;
-  Map<String?, String?> headers;
+  List<Map<String?, String?>?> headers;
 
   Object encode() {
     final Map<Object?, Object?> pigeonMap = <Object?, Object?>{};
@@ -218,7 +218,7 @@ class PreloadMessage {
     return PreloadMessage(
       urls: (pigeonMap['urls'] as List<Object?>?)!.cast<String?>(),
       shouldPreloadFirstSegment: pigeonMap['shouldPreloadFirstSegment']! as bool,
-      headers: (pigeonMap['headers'] as Map<Object?, Object?>?)!.cast<String?, String?>(),
+      headers: (pigeonMap['headers'] as List<Object?>?)!.cast<Map<String?, String?>?>(),
     );
   }
 }

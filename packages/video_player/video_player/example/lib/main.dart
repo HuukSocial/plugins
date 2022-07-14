@@ -14,6 +14,7 @@ import 'package:video_player/video_player.dart';
 final headers = {
   'x-user-id': 'userId123',
   'x-room-id': '123',
+  'x-post-type': '1',
 };
 
 void main() {
@@ -32,13 +33,66 @@ class FirstPage extends StatefulWidget {
 }
 
 class _FirstPageState extends State<FirstPage> {
-
-
-  final m3u8IdsList1 = [5162, 4296, 6085, 5450, 4520, 5448, 5406, 6084, 4145, 5093];
-  final m3u8IdsList2 = [5568, 5816, 5573, 5838, 4297, 5671, 5680, 4295, 5210, 4692];
-  final m3u8IdsList3 = [5701, 4596, 5607, 5534, 5662, 3951, 5089, 5363, 4059, 4896];
-  final m3u8IdsList4 = [5831, 6060, 4108, 5026, 4661, 5729, 5832, 5805, 4264, 4720];
-  final m3u8IdsList5 = [3786, 5501, 4251, 4762, 5651, 5804, 5490, 4761, 5588, 4102];
+  final m3u8IdsList1 = [
+    5162,
+    4296,
+    6085,
+    5450,
+    4520,
+    5448,
+    5406,
+    6084,
+    4145,
+    5093
+  ];
+  final m3u8IdsList2 = [
+    5568,
+    5816,
+    5573,
+    5838,
+    4297,
+    5671,
+    5680,
+    4295,
+    5210,
+    4692
+  ];
+  final m3u8IdsList3 = [
+    5701,
+    4596,
+    5607,
+    5534,
+    5662,
+    3951,
+    5089,
+    5363,
+    4059,
+    4896
+  ];
+  final m3u8IdsList4 = [
+    5831,
+    6060,
+    4108,
+    5026,
+    4661,
+    5729,
+    5832,
+    5805,
+    4264,
+    4720
+  ];
+  final m3u8IdsList5 = [
+    3786,
+    5501,
+    4251,
+    4762,
+    5651,
+    5804,
+    5490,
+    4761,
+    5588,
+    4102
+  ];
   final m3u8IdsList7 = [5191, 4068, 4206, 5073];
 
   final mixedLinks = [
@@ -121,7 +175,7 @@ class _FirstPageState extends State<FirstPage> {
                   VideoPlayerCacheManager.predownloadAndCache(
                     urls: m3u8IdsList1.map((e) => buildM3u8Url(e)).toList(),
                     shouldPreloadFirstSegment: true,
-                    headers: headers,
+                    headers: m3u8IdsList1.map((e) => headers).toList(),
                   );
                 },
               ),
@@ -131,7 +185,7 @@ class _FirstPageState extends State<FirstPage> {
                   VideoPlayerCacheManager.predownloadAndCache(
                     urls: m3u8IdsList2.map((e) => buildM3u8Url(e)).toList(),
                     shouldPreloadFirstSegment: true,
-                    headers: headers,
+                    headers: m3u8IdsList2.map((e) => headers).toList(),
                   );
                 },
               ),
@@ -141,7 +195,7 @@ class _FirstPageState extends State<FirstPage> {
                   VideoPlayerCacheManager.predownloadAndCache(
                     urls: m3u8IdsList3.map((e) => buildM3u8Url(e)).toList(),
                     shouldPreloadFirstSegment: true,
-                    headers: headers,
+                    headers: m3u8IdsList3.map((e) => headers).toList(),
                   );
                 },
               ),
@@ -151,7 +205,7 @@ class _FirstPageState extends State<FirstPage> {
                   VideoPlayerCacheManager.predownloadAndCache(
                     urls: m3u8IdsList4.map((e) => buildM3u8Url(e)).toList(),
                     shouldPreloadFirstSegment: true,
-                    headers: headers,
+                    headers: m3u8IdsList4.map((e) => headers).toList(),
                   );
                 },
               ),
@@ -161,7 +215,7 @@ class _FirstPageState extends State<FirstPage> {
                   VideoPlayerCacheManager.predownloadAndCache(
                     urls: m3u8IdsList5.map((e) => buildM3u8Url(e)).toList(),
                     shouldPreloadFirstSegment: true,
-                    headers: headers,
+                    headers: m3u8IdsList5.map((e) => headers).toList(),
                   );
                 },
               ),
@@ -171,7 +225,7 @@ class _FirstPageState extends State<FirstPage> {
                   VideoPlayerCacheManager.predownloadAndCache(
                     urls: m3u8IdsList7.map((e) => buildM3u8Url(e)).toList(),
                     shouldPreloadFirstSegment: true,
-                    headers: headers,
+                    headers: m3u8IdsList7.map((e) => headers).toList(),
                   );
                 },
               ),
@@ -186,7 +240,7 @@ class _FirstPageState extends State<FirstPage> {
                               buildM3u8Url(e),
                             ],
                             shouldPreloadFirstSegment: true,
-                            headers: headers,
+                            headers: [headers],
                           );
                         },
                       ),
@@ -217,19 +271,18 @@ class _FirstPageState extends State<FirstPage> {
                   VideoPlayerCacheManager.predownloadAndCache(
                     urls: mixedLinks,
                     shouldPreloadFirstSegment: true,
-                    headers: headers,
+                    headers: mixedLinks.map((e) => headers).toList(),
                   );
                 },
               ),
               SizedBox(height: 80),
-
               TextButton(
                 child: Text("start predownload and cache 1"),
                 onPressed: () {
                   VideoPlayerCacheManager.predownloadAndCache(
                     urls: mp4IdsList1.map((e) => buildMP4Url(e)).toList(),
                     shouldPreloadFirstSegment: true,
-                    headers: headers,
+                    headers: mp4IdsList1.map((e) => headers).toList(),
                   );
                 },
               ),
@@ -239,7 +292,7 @@ class _FirstPageState extends State<FirstPage> {
                   VideoPlayerCacheManager.predownloadAndCache(
                     urls: mp4IdsList2.map((e) => buildMP4Url(e)).toList(),
                     shouldPreloadFirstSegment: true,
-                    headers: headers,
+                    headers: mp4IdsList2.map((e) => headers).toList(),
                   );
                 },
               ),
@@ -249,7 +302,7 @@ class _FirstPageState extends State<FirstPage> {
                   VideoPlayerCacheManager.predownloadAndCache(
                     urls: mp4IdsList3.map((e) => buildMP4Url(e)).toList(),
                     shouldPreloadFirstSegment: true,
-                    headers: headers,
+                    headers: mp4IdsList3.map((e) => headers).toList(),
                   );
                 },
               ),
@@ -259,7 +312,7 @@ class _FirstPageState extends State<FirstPage> {
                   VideoPlayerCacheManager.predownloadAndCache(
                     urls: mp4IdsList4.map((e) => buildMP4Url(e)).toList(),
                     shouldPreloadFirstSegment: true,
-                    headers: headers,
+                    headers: mp4IdsList4.map((e) => headers).toList(),
                   );
                 },
               ),
@@ -268,7 +321,8 @@ class _FirstPageState extends State<FirstPage> {
                 onPressed: () {
                   Navigator.of(context).push(
                     MaterialPageRoute(
-                      builder: (context) => PlayerPage(url: buildMP4Url(mp4IdsList1.first)),
+                      builder: (context) =>
+                          PlayerPage(url: buildMP4Url(mp4IdsList1.first)),
                     ),
                   );
                 },

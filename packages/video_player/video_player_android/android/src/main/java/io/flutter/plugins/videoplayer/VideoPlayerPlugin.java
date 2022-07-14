@@ -246,7 +246,10 @@ public class VideoPlayerPlugin implements FlutterPlugin, VideoPlayerApi {
     public void predownloadAndCache(Messages.PreloadMessage msg) {
         // check for prevent duplicate preload call
         final List<String> urls = msg.getUrls();
-        for (String url : urls) {
+        final boolean shouldPreloadFirstSegment = msg.getShouldPreloadFirstSegment();
+        for (int i = 0; i < urls.size(); i++) {
+            final String url = urls.get(i);
+            final Map<String, String> headers = msg.getHeaders().get(i);
             if (preloadMediaUrls.contains(url)) return;
             // add to flags
             preloadMediaUrls.add(url);
@@ -254,10 +257,10 @@ public class VideoPlayerPlugin implements FlutterPlugin, VideoPlayerApi {
             preloadExecutorService.execute(() -> {
                 if (url.endsWith("m3u8")) {
                     // hls
-                    predownloadAndCacheHls(url, msg.getShouldPreloadFirstSegment(), msg.getHeaders());
+                    predownloadAndCacheHls(url, shouldPreloadFirstSegment, headers);
                 } else if (url.endsWith("mp4")) {
                     // mp4
-                    predownloadAndCacheMp4(url, msg.getHeaders());
+                    predownloadAndCacheMp4(url, headers);
                 }
             });
         }

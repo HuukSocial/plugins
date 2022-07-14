@@ -217,7 +217,7 @@ static id GetNullableObject(NSDictionary* dict, id key) {
 @implementation FLTPreloadMessage
 + (instancetype)makeWithUrls:(NSArray<NSString *> *)urls
     shouldPreloadFirstSegment:(NSNumber *)shouldPreloadFirstSegment
-    headers:(NSDictionary<NSString *, NSString *> *)headers {
+    headers:(NSArray<NSDictionary<NSString *, NSString *> *> *)headers {
   FLTPreloadMessage* pigeonResult = [[FLTPreloadMessage alloc] init];
   pigeonResult.urls = urls;
   pigeonResult.shouldPreloadFirstSegment = shouldPreloadFirstSegment;

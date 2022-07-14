@@ -170,7 +170,7 @@ class AVFoundationVideoPlayer extends VideoPlayerPlatform {
   Future<void> predownloadAndCache(
     List<String> urls,
     bool shouldPreloadFirstSegment,
-    Map<String, String> headers,
+    List<Map<String, String>> headers,
   ) {
     return _api.predownloadAndCache(
       PreloadMessage(

@@ -36,22 +36,26 @@ import PINCache
     return FLTVideoPlayerCacheManager.swiftSharedInstance
   }
   
-  @objc public func predownloadAndCache(urls: [String], shouldPreloadFirstSegment: NSNumber) {
+  @objc public func predownloadAndCache(urls: [String], shouldPreloadFirstSegment: NSNumber, headers: [[String: String]]) {
     
     var hlsURLs = [String]()
+    var hlsHeaders = [[String: String]]()
     var otherURLs = [String]()
-    urls.forEach { url in
+    var otherHeaders = [[String: String]]()
+    for (index, url) in urls.enumerated() {
       if url.hasSuffix(".m3u8") || url.hasSuffix(".M3U8") {
         hlsURLs.append(url)
+        hlsHeaders.append(headers[index])
       } else {
         otherURLs.append(url)
+        otherHeaders.append(headers[index])
       }
     }
     if hlsURLs.isEmpty == false {
-      hlsVideoPlayerCacheManager.predownloadAndCacheURls(hlsURLs, shouldPreloadFirstSegment: shouldPreloadFirstSegment)
+      hlsVideoPlayerCacheManager.predownloadAndCacheURls(hlsURLs, shouldPreloadFirstSegment: shouldPreloadFirstSegment, headers: hlsHeaders)
     }
     if otherURLs.isEmpty == false {
-      otherVideoPlayerCacheManager.predownloadAndCacheURls(otherURLs)
+      otherVideoPlayerCacheManager.predownloadAndCacheURls(otherURLs, headers: otherHeaders)
     }
   }
   

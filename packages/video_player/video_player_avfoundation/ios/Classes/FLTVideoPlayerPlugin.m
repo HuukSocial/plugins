@@ -685,7 +685,7 @@ FLTVideoPlayerCacheManager* _cacheManager;
 }
 
 - (void)predownloadAndCache:(nonnull FLTPreloadMessage *)msg error:(FlutterError * _Nullable __autoreleasing * _Nonnull)error {
-  [_cacheManager predownloadAndCacheWithUrls: msg.urls shouldPreloadFirstSegment: msg.shouldPreloadFirstSegment];
+  [_cacheManager predownloadAndCacheWithUrls: msg.urls shouldPreloadFirstSegment: msg.shouldPreloadFirstSegment headers: msg.headers];
 }
 
 @end

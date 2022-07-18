@@ -35,12 +35,12 @@ class VideoPlayerCacheManager {
   static void predownloadAndCache({
     required List<String> urls,
     bool shouldPreloadFirstSegment = true,
-    List<Map<String, String>>? headers,
+    required List<Map<String, String>> headers,
   }) {
     _videoPlayerPlatform.predownloadAndCache(
       urls,
       shouldPreloadFirstSegment,
-      headers ?? [],
+      headers,
     );
   }
 }

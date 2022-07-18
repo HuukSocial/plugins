@@ -18,16 +18,18 @@ class FLTHLSVideoPlayerCacheManager: NSObject {
   let generatedManifestFilePerOriginURL = 7
   
   var fetchingManifestReverseProxyURLsMax: Int {
-    return originURLProcessingMax * generatedManifestFilePerOriginURL // 35
+    return originURLProcessingMax * generatedManifestFilePerOriginURL // 70
   }
   var fetchingManifestReverseProxyURLsCount = 0
   var pendingManifestReverseProxyURLs = [URL]()
+  var pendingManifestHeaders = [[String: String]]()
   
   var fetchingSegmentReverseProxyURLsMax: Int {
     return originURLProcessingMax
   }
   var fetchingSegmentReverseProxyURLsCount = 0
   var pendingSegmentReverseProxyURLs = [URL]()
+  var pendingSegmentHeaders = [[String: String]]()
   
   let reverseProxyURLsQueue = DispatchQueue(label: "com.huuk.social.reverseProxyURLs", attributes: .concurrent)
   let urlSession = URLSession(configuration: .default)
@@ -42,7 +44,7 @@ class FLTHLSVideoPlayerCacheManager: NSObject {
     return server.reverseProxyURL(from: originURL)!
   }
   
-  func predownloadAndCacheURls(_ urls: [String], shouldPreloadFirstSegment: NSNumber) {
+  func predownloadAndCacheURls(_ urls: [String], shouldPreloadFirstSegment: NSNumber, headers: [[String: String]]) {
     reverseProxyURLsQueue.async(flags: .barrier, execute: { [weak self] in
       guard let self = self else { return }
       let urls = urls.filter { url in
@@ -52,60 +54,70 @@ class FLTHLSVideoPlayerCacheManager: NSObject {
         return
       }
       
-      urls.forEach { url in
-        self.pendingManifestReverseProxyURLs.append(contentsOf: self.getAllManifestReverseProxyURLs(from: url))
+      
+      for (index, url) in urls.enumerated() {
+        let manifestReverseProxyURLs = self.getAllManifestReverseProxyURLs(from: url)
+        self.pendingManifestReverseProxyURLs.append(contentsOf: manifestReverseProxyURLs)
+        let manifestHeaders = manifestReverseProxyURLs.map { url in
+          return headers[index]
+        }
+        self.pendingManifestHeaders.append(contentsOf: manifestHeaders)
       }
 //      print("cuong: Manifest " + String(self.pendingManifestReverseProxyURLs.count))
       if self.fetchingManifestReverseProxyURLsCount < self.fetchingManifestReverseProxyURLsMax {
         let itemAmountToFetch = self.fetchingManifestReverseProxyURLsMax - self.fetchingManifestReverseProxyURLsCount
         let pendingManifestReverseProxyURLs = self.pendingManifestReverseProxyURLs
+        let pendingManifestHeaders = self.pendingManifestHeaders
         if itemAmountToFetch >= self.pendingManifestReverseProxyURLs.count {
           self.pendingManifestReverseProxyURLs.removeAll()
+          self.pendingManifestHeaders.removeAll()
 //          print("cuong: Manifest " + String(self.pendingManifestReverseProxyURLs.count))
           self.fetchingManifestReverseProxyURLsCount = pendingManifestReverseProxyURLs.count
-          pendingManifestReverseProxyURLs.forEach { url in
-            self.fetchManifestReverseProxyURL(url)
+          for (index, url) in pendingManifestReverseProxyURLs.enumerated() {
+            self.fetchManifestReverseProxyURL(url, headers: pendingManifestHeaders[index])
           }
         } else {
           for index in 0..<itemAmountToFetch {
             self.pendingManifestReverseProxyURLs.removeFirst()
+            self.pendingManifestHeaders.removeFirst()
 //            print("cuong: Manifest " + String(self.pendingManifestReverseProxyURLs.count))
             self.fetchingManifestReverseProxyURLsCount += 1
             let url = pendingManifestReverseProxyURLs[index]
-            let task = self.urlSession.dataTask(with: url) { data, response, error in
-              self.fetchManifestReverseProxyURL(url)
-            }
-            task.resume()
+            let headers = pendingManifestHeaders[index]
+            self.fetchManifestReverseProxyURL(url, headers: headers)
           }
         }
       }
       
       
       if shouldPreloadFirstSegment == true {
-        self.pendingSegmentReverseProxyURLs.append(contentsOf: urls.map { url in
+        let firstSegmentURLs = urls.map { url in
           return self.getFirstSegmentURL(from: url)
-        })
+        }
+        self.pendingSegmentReverseProxyURLs.append(contentsOf: firstSegmentURLs)
+        self.pendingSegmentHeaders.append(contentsOf: headers)
 //        print("cuong: Segment " + String(self.pendingSegmentReverseProxyURLs.count))
         if self.fetchingSegmentReverseProxyURLsCount < self.fetchingSegmentReverseProxyURLsMax {
           let itemAmountToFetch = self.fetchingSegmentReverseProxyURLsMax - self.fetchingSegmentReverseProxyURLsCount
           let pendingSegmentReverseProxyURLs = self.pendingSegmentReverseProxyURLs
+          let pendingSegmentHeaders = self.pendingSegmentHeaders
           if itemAmountToFetch >= self.pendingSegmentReverseProxyURLs.count {
             self.pendingSegmentReverseProxyURLs.removeAll()
+            self.pendingSegmentHeaders.removeAll()
 //            print("cuong: Segment " + String(self.pendingSegmentReverseProxyURLs.count))
             self.fetchingSegmentReverseProxyURLsCount = pendingSegmentReverseProxyURLs.count
-            pendingSegmentReverseProxyURLs.forEach { url in
-              self.fetchSegmentReverseProxyURL(url)
+            for (index, url) in pendingSegmentReverseProxyURLs.enumerated() {
+              self.fetchSegmentReverseProxyURL(url, headers: pendingSegmentHeaders[index])
             }
           } else {
             for index in 0...itemAmountToFetch {
               self.pendingSegmentReverseProxyURLs.removeFirst()
+              self.pendingSegmentHeaders.removeFirst()
 //              print("cuong: Segment " + String(self.pendingSegmentReverseProxyURLs.count))
               self.fetchingSegmentReverseProxyURLsCount += 1
               let url = pendingSegmentReverseProxyURLs[index]
-              let task = self.urlSession.dataTask(with: url) { data, response, error in
-                self.fetchSegmentReverseProxyURL(url)
-              }
-              task.resume()
+              let headers = pendingSegmentHeaders[index]
+              self.fetchSegmentReverseProxyURL(url, headers: headers)
             }
           }
         }
@@ -132,35 +144,47 @@ class FLTHLSVideoPlayerCacheManager: NSObject {
     return manifestReverseProxyURLs
   }
   
-  func fetchManifestReverseProxyURL(_ url: URL) {
-    let task = urlSession.dataTask(with: url) { data, response, error in
+  func fetchManifestReverseProxyURL(_ url: URL, headers: [String: String]) {
+    var request = URLRequest(url: url)
+    headers.keys.forEach { key in
+      request.setValue(headers[key], forHTTPHeaderField: key)
+    }
+    let task = urlSession.dataTask(with: request) { data, response, error in
       self.reverseProxyURLsQueue.async(flags: .barrier, execute: { [weak self] in
         guard let self = self else { return }
 //        print("cuong: Manifest " + String(self.pendingManifestReverseProxyURLs.count))
         self.fetchingManifestReverseProxyURLsCount -= 1
         if self.pendingManifestReverseProxyURLs.isEmpty == false {
           let pendingURL = self.pendingManifestReverseProxyURLs.removeFirst()
+          let pendingHeaders = self.pendingManifestHeaders.removeFirst()
           self.fetchingManifestReverseProxyURLsCount += 1
-          self.fetchManifestReverseProxyURL(pendingURL)
+          self.fetchManifestReverseProxyURL(pendingURL, headers: pendingHeaders)
         }
       })
     }
+//    print("Cuong: " + (task.currentRequest!.url!.description) + " - " + task.currentRequest!.allHTTPHeaderFields!.description)
     task.resume()
   }
   
-  func fetchSegmentReverseProxyURL(_ url: URL) {
-    let task = urlSession.dataTask(with: url) { data, response, error in
+  func fetchSegmentReverseProxyURL(_ url: URL, headers: [String: String]) {
+    var request = URLRequest(url: url)
+    headers.keys.forEach { key in
+      request.setValue(headers[key], forHTTPHeaderField: key)
+    }
+    let task = urlSession.dataTask(with: request) { data, response, error in
       self.reverseProxyURLsQueue.async(flags: .barrier, execute: { [weak self] in
         guard let self = self else { return }
 //        print("cuong: Segment " + String(self.pendingSegmentReverseProxyURLs.count))
         self.fetchingSegmentReverseProxyURLsCount -= 1
         if self.pendingSegmentReverseProxyURLs.isEmpty == false {
           let pendingURL = self.pendingSegmentReverseProxyURLs.removeFirst()
+          let pendingHeaders = self.pendingSegmentHeaders.removeFirst()
           self.fetchingSegmentReverseProxyURLsCount += 1
-          self.fetchSegmentReverseProxyURL(pendingURL)
+          self.fetchSegmentReverseProxyURL(pendingURL, headers: pendingHeaders)
         }
       })
     }
+//    print("Cuong: " + (task.currentRequest!.url!.description) + " - " + task.currentRequest!.allHTTPHeaderFields!.description)
     task.resume()
   }
 }
